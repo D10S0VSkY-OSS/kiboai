@@ -9,7 +9,6 @@ def main():
         print("Error: OPENAI_API_KEY is not set.")
         return
 
-    # Define Agent
     agent_def = AgentConfig(
         name='ScienceBot',
         description='You are a helpful science assistant.',
@@ -21,12 +20,10 @@ def main():
         }
     )
     
-    # Automatically initialized
     agent = create_agent(agent_def, api_key=api_key)
 
     print("Dispatching task...")
     try:
-        # Submit task synchronously
         result = agent.run("Explain Quantum Computing in 1 sentence.")
         
         print("\nResult:")

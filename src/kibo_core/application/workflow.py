@@ -15,7 +15,6 @@ class DistributedWorkflowService:
         if params is None:
             params = {}
 
-        # 1. Create Domain Context
         context = AgentContext(
             workflow_id=uuid4(),
             step_id=uuid4(),
@@ -27,10 +26,8 @@ class DistributedWorkflowService:
             context=context
         )
 
-        # 2. Dispatch to Infrastructure (Ray)
         future = self.executor.execute_remote(agent, request)
         
-        # 3. Wait for result (in a real async app we might return the future)
         result = ray.get(future)
         
         return result
@@ -43,7 +40,6 @@ class DistributedWorkflowService:
         if params is None:
             params = {}
 
-        # 1. Create Domain Context
         context = AgentContext(
             workflow_id=uuid4(),
             step_id=uuid4(),
@@ -55,7 +51,6 @@ class DistributedWorkflowService:
             context=context
         )
 
-        # 2. Dispatch to Infrastructure (Ray)
         future = self.executor.execute_remote(agent, request)
         
         return future

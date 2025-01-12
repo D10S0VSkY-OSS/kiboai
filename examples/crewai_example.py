@@ -5,7 +5,6 @@ from kibo_core import AgentConfig, create_agent
 def main():
     print("--- CrewAI + Ollama + Kibo Blueprint Example ---")
     
-    # Define Agent
     agent_def = AgentConfig(
         name='Researcher',
         description='An AI researcher obsessed with agents.',
@@ -18,12 +17,10 @@ def main():
         }
     )
 
-    # create_agent handles Kibo initialization
     agent = create_agent(agent_def)
 
     print("Dispatching Crew to Kibo Cluster...")
     try:
-        # Generic sync execution
         result = agent.run("Distributed AI Agents")
         
         print("\n--- Result ---")

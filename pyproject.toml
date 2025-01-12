@@ -20,6 +20,8 @@ dependencies = [
     "crewai-tools>=0.76.0",
     "tavily-python>=0.7.21",
     "python-dotenv>=1.1.1",
+    "mkdocs>=1.6.1",
+    "mkdocs-material>=9.7.1",
 ]
 
 [project.scripts]

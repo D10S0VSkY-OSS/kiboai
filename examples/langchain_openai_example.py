@@ -10,7 +10,6 @@ def main():
         print("Error: OPENAI_API_KEY environment variable is not set.")
         sys.exit(1)
     
-    # Define Agent
     agent_def = AgentConfig(
         name='JesterAI',
         description='A funny bot backed by OpenAI',
@@ -19,12 +18,10 @@ def main():
         model="gpt-4o-mini"
     )
 
-    # Automatically initialized
     agent = create_agent(agent_def, api_key=api_key)
     
     print("Dispatching job to Kibo Cluster...")
     try:
-        # Sync run
         result = agent.run("saving money")
         
         print("\n--- Result ---")

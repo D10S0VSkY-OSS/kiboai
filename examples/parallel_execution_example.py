@@ -6,7 +6,6 @@ from kibo_core import AgentConfig, create_agent
 def main():
     print("--- Kibo Parallel Execution Example (Blueprint) ---")
     
-    # 2. Define multiple tasks
     tasks = [
         ("Task A", 2),
         ("Task B", 2),
@@ -21,7 +20,6 @@ def main():
     futures = []
     
     for name, duration in tasks:
-        # Define Agent
         agent_def = AgentConfig(
             name=f"Worker-{name}",
             description="Simulates work.",
@@ -31,7 +29,6 @@ def main():
             config={"duration": duration}
         )
         
-        # Create and submit async
         agent = create_agent(agent_def)
         future = agent.run_async(name)
         
@@ -40,7 +37,6 @@ def main():
 
     print("\nAll tasks submitted. Waiting for results...")
     
-    # Wait for all results
     results = [f.result() for f in futures]
     
     end_time = time.time()
@@ -54,7 +50,6 @@ def main():
         
     print(f"\nTotal execution time: {total_time:.2f} seconds")
     
-    # Theoretical sequential time
     seq_time = sum(t[1] for t in tasks)
     print(f"Theoretical sequential time: {seq_time:.2f} seconds")
     print(f"Speedup: {seq_time / total_time:.2f}x")

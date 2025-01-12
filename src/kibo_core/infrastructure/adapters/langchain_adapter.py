@@ -19,12 +19,7 @@ class LangChainAdapter(IAgentNode):
         Executes the LangChain runnable.
         Passes 'params' as config if needed, or just invokes with input data.
         """
-        # Determine input format. 
-        # If input_data is a dict, we pass it directly.
-        # If it's a string, we might need to wrap it depending on the chain.
-        # For this generic adapter, we assume the user shapes input_data correctly.
         
-        # We can extract config from params if present
         config = request.context.params.get("langchain_config", {})
         
         try:
@@ -51,7 +46,6 @@ class LangChainAdapter(IAgentNode):
                 metadata=metadata
             )
         except Exception as e:
-            # abstract error handling
             raise e
 
     async def aexecute(self, request: AgentRequest) -> AgentResult:

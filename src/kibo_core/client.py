@@ -18,13 +18,10 @@ class KiboFuture:
 
 class KiboAgent:
     def __init__(self, config: AgentConfig, api_key: Optional[str] = None):
-        # 1. Ensure Kibo is initialized (Singleton behavior handles multiple calls safely)
         kibo_core.init()
         
-        # 2. Initialize Service
         self.service = DistributedWorkflowService()
         
-        # 3. Create Distributed Adapter
         self.adapter = create_distributed_agent(config, api_key=api_key)
         
     def run(self, input_data: Any) -> AgentResult:
@@ -38,8 +35,6 @@ class KiboAgent:
         """
         Asynchronous execution. Returns a KiboFuture.
         """
-        # Adapters usually expect 'input_data' to be passed.
-        # Framework factories we built handle the mapping from this input.
         future = self.service.submit_agent_task(
             agent=self.adapter,
             input_data=input_data
