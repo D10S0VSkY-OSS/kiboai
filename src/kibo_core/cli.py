@@ -12,6 +12,7 @@ def main():
         print("Usage: kibo <command> [args]")
         print("Commands:")
         print("  start    Start a Kibo node (Head or Worker)")
+        print("  start-all Start Kibo Head Node + Gateway (Proxy)")
         print("  stop     Stop the Kibo node")
         print("  status   Show cluster status")
         print("  proxy    Manage the Kibo Gateway (LiteLLM Proxy)")
@@ -77,6 +78,38 @@ def main():
             )
             sys.exit(e.returncode)
 
+    elif command == "start-all":
+        print("🚀 Launching Kibo AI Platform...")
+
+        # Self-reference command
+        kibo_cmd = [sys.executable, "-m", "kibo_core.cli"]
+
+        # 1. Start Proxy (Background)
+        print("\n[1/2] Starting Gateway...")
+        proxy_cmd = kibo_cmd + [
+            "proxy",
+            "start",
+            "--config",
+            "examples/proxy_config.yaml",
+            "-d",
+        ]
+
+        try:
+            subprocess.run(proxy_cmd, check=True)
+            print("✅ Gateway started.")
+        except subprocess.CalledProcessError:
+            print("❌ Failed to start Gateway.")
+            sys.exit(1)
+
+        # 2. Start Head Node
+        print("\n[2/2] Starting Cluster Head Node...")
+        node_cmd = kibo_cmd + ["start", "--head", "--port=6379"]
+
+        try:
+            subprocess.run(node_cmd, check=True)
+        except subprocess.CalledProcessError as e:
+            sys.exit(e.returncode)
+
     elif command == "stop":
         ray_executable = shutil.which("ray")
         if not ray_executable:
@@ -120,29 +153,51 @@ def main():
 
         if subcmd == "start":
             print(" Starting Kibo Gateway (LiteLLM Proxy)...")
+
+            # Check for background flag
+            run_background = False
+            if "-d" in proxy_args:
+                proxy_args.remove("-d")
+                run_background = True
+            elif "--detach" in proxy_args:
+                proxy_args.remove("--detach")
+                run_background = True
+
             cmd = (
                 litellm_executable
                 + ["--port", "4000", "--telemetry", "False"]
                 + proxy_args
             )
 
-            try:
-                print("  Gateway listening at http://localhost:4000")
-                print("  Press Ctrl+C to stop.")
-                subprocess.run(cmd, check=True)
-            except KeyboardInterrupt:
-                print("\n Gateway stopped.")
-            except subprocess.CalledProcessError as e:
-                print(f" Failed to start Gateway.")
-                print(f"{e}")
+            if run_background:
+                try:
+                    # Run in background using Popen
+                    with open("gateway.log", "a") as outfile:
+                        subprocess.Popen(cmd, stdout=outfile, stderr=outfile)
+                    print("  Gateway started in background.")
+                    print("  Logs are being written to gateway.log")
+                    print("  To stop: kibo proxy stop")
+                except Exception as e:
+                    print(f" Failed to start Gateway in background: {e}")
+            else:
+                try:
+                    print("  Gateway listening at http://localhost:4000")
+                    print("  Press Ctrl+C to stop.")
+                    subprocess.run(cmd, check=True)
+                except KeyboardInterrupt:
+                    print("\n Gateway stopped.")
+                except subprocess.CalledProcessError as e:
+                    print(f" Failed to start Gateway.")
+                    print(f"{e}")
 
         elif subcmd == "stop":
-            print(
-                " To stop the Gateway, simply press Ctrl+C in the terminal where it's running."
-            )
-            print(
-                "   (Process management for the gateway is not yet daemonized in this version)"
-            )
+            print(" Stopping Kibo Gateway...")
+            # Simple pkill for now (matches cli behavior of wrapping tools)
+            try:
+                subprocess.run(["pkill", "-f", "litellm"], check=False)
+                print(" Gateway stopped.")
+            except Exception as e:
+                print(f" Error stopping gateway: {e}")
 
         else:
             print(f"Unknown proxy command: {subcmd}")

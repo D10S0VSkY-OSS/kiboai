@@ -8,84 +8,11 @@ load_dotenv()
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "src"))
 
 from kibo_core import AgentConfig, create_agent
+from kibo_core.tools import TavilySearchTool
 
 PROXY_URL = os.getenv("KIBO_PROXY_URL", "http://localhost:4000")
 MODEL_NAME = "openai/gpt-4o-mini"
 TAVILY_KEY = os.getenv("TAVILY_API_KEY")
-
-
-def get_agno_tool(api_key: str):
-    """Returns Agno Tavily Tool or None if import fails."""
-    if not api_key:
-        return None
-    try:
-        from agno.tools.tavily import TavilyTools
-
-        return TavilyTools(api_key=api_key)
-    except ImportError:
-        return None
-
-
-def get_langchain_tool(api_key: str):
-    """Returns LangChain Tavily Tool or Mock."""
-    tool = None
-    if api_key:
-        try:
-            from langchain_community.tools.tavily_search import TavilySearchResults
-
-            tool = TavilySearchResults(api_key=api_key)
-        except ImportError:
-            pass
-
-    if not tool:
-        from langchain.tools import Tool
-
-        return Tool(
-            name="search",
-            func=lambda x: "Mock Data: Market is stable.",
-            description="Search mock",
-        )
-    return tool
-
-
-def get_crewai_tool(api_key: str):
-    """Returns Custom CrewAI Tavily Tool or Mock."""
-    tool = None
-    if api_key:
-        try:
-            from crewai.tools import BaseTool
-            from tavily import TavilyClient
-
-            class TavilyCrewTool(BaseTool):
-                name: str = "TavilySearch"
-                description: str = "Search web."
-
-                def _run(self, query: str) -> str:
-                    return str(
-                        TavilyClient(api_key=api_key).search(
-                            query, search_depth="basic"
-                        )
-                    )
-
-            tool = TavilyCrewTool()
-        except ImportError:
-            pass
-
-    if not tool:
-        try:
-            from crewai.tools import BaseTool
-
-            class MockTool(BaseTool):
-                name: str = "Search"
-                description: str = "Mock search"
-
-                def _run(self, q: str) -> str:
-                    return "Mock Data: Stocks up."
-
-            return MockTool()
-        except ImportError:
-            return None
-    return tool
 
 
 def make_agent(
@@ -153,24 +80,27 @@ async def main():
     if not TAVILY_KEY:
         print(" Running in MOCK mode (No TAVILY_API_KEY)")
 
+    # Universal Kibo Tool
+    tavily_tool = TavilySearchTool(api_key=TAVILY_KEY)
+
     agents = [
         make_agent(
             "GoldAgent",
             "Find current Gold/XAU price (USD).",
             "agno",
-            [get_agno_tool(TAVILY_KEY)],
+            [tavily_tool],
         ),
         make_agent(
             "CryptoAgent",
             "Summarize top Blockchain news.",
             "langchain",
-            [get_langchain_tool(TAVILY_KEY)],
+            [tavily_tool],
         ),
         make_agent(
             "StockAgent",
             "Get prices: NVDA, MSFT, GOOG.",
             "crewai",
-            [get_crewai_tool(TAVILY_KEY)],
+            [tavily_tool],
         ),
     ]
 

@@ -10,6 +10,7 @@ def kibo_init(address: str = None, **kwargs):
     silence_ray_logs()
     print("Initializing Kibo Runtime...")
 
+    # Kibo Runtime Initialization
     if "logging_level" not in kwargs:
         kwargs["logging_level"] = logging.ERROR
 
@@ -19,9 +20,41 @@ def kibo_init(address: str = None, **kwargs):
     if "env_vars" not in kwargs["runtime_env"]:
         kwargs["runtime_env"]["env_vars"] = {}
 
+    # 1. Hide internal Ray warnings
     kwargs["runtime_env"]["env_vars"]["RAY_DEDUP_LOGS"] = "0"
-    kwargs["runtime_env"]["configure_logging"] = False
+    kwargs["runtime_env"]["env_vars"]["UV_LINK_MODE"] = "copy"
+
+    # 3. Kibo-specific: Disable METRICS agent entirely to stop "exporter agent" errors in console
+    # This disables the Prometheus exporter which causes the RpcError code: 14 loops when Dashboard is off.
+    # Set these globally for the driver process too
+    import os
+
+    os.environ["RAY_enable_metrics_collection"] = "0"
+    os.environ["RAY_disable_metrics_collection"] = "1"
+
+    kwargs["runtime_env"]["env_vars"]["RAY_enable_metrics_collection"] = "0"
+    kwargs["runtime_env"]["env_vars"][
+        "RAY_disable_metrics_collection"
+    ] = "1"  # Redundant safety
+    kwargs["runtime_env"]["env_vars"]["RAY_USAGE_STATS_ENABLED"] = "0"
+
+    # 2. Prevent Ray from re-creating expensive venvs if we are sharing the same env
+    # (Checking if we are inside a UV/Venv environment)
+    import os
+
+    if "VIRTUAL_ENV" in os.environ:
+        # Force workers to inherit the current environment instead of rebuilding it
+        # This silences "(raylet) Creating virtual environment..."
+        kwargs["runtime_env"]["env_vars"]["VIRTUAL_ENV"] = os.environ["VIRTUAL_ENV"]
+        # We might need to trick Ray into thinking it doesn't need to rebuild
+
     kwargs["log_to_driver"] = False
+    kwargs["configure_logging"] = (
+        True  # Let python logging handle it, don't let Ray hijack stdout/stderr arbitrarily
+    )
+
+    if "include_dashboard" not in kwargs:
+        kwargs["include_dashboard"] = False  # Explicitly disable dashboard
 
     if ray.is_initialized():
         print("Kibo Runtime is already active.")

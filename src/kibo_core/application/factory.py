@@ -2,6 +2,7 @@ import os
 from typing import Any, Callable
 from kibo_core.domain.blueprint import AgentConfig
 from kibo_core.infrastructure.adapters.base import LazyAgentAdapter
+from kibo_core.application.converters import convert_tools
 from crewai.llm import LLM
 
 
@@ -43,6 +44,9 @@ def _create_crewai_agent(bp: AgentConfig, api_key: str):
     agent_config.pop("base_url", None)
     agent_config.pop("api_key", None)
 
+    # Convert generic KiboTools to CrewAI-compatible tools
+    final_tools = convert_tools(tools, "crewai")
+
     researcher = Agent(
         role=bp.name,
         goal=bp.instructions,
@@ -50,7 +54,7 @@ def _create_crewai_agent(bp: AgentConfig, api_key: str):
         verbose=verbose,
         allow_delegation=allow_delegation,
         llm=llm,
-        tools=tools,
+        tools=final_tools,
         **agent_config,  # Pass remaining config as kwargs
     )
 
@@ -86,12 +90,19 @@ def _create_agno_agent(bp: AgentConfig, api_key: str):
     agent_config.pop("base_url", None)
     agent_config.pop("api_key", None)
 
+    # Remove 'temperature' if present in config but not supported by Agno agent constructor
+    # (Agno usually takes temperature in the Model, not the Agent)
+    agent_config.pop("temperature", None)
+
+    # Convert generic KiboTools to Agno-compatible tools
+    final_tools = convert_tools(tools, "agno")
+
     agent = Agent(
         model=model,
         description=bp.description,
         instructions=bp.instructions,
         markdown=markdown,
-        tools=tools,
+        tools=final_tools,
         **agent_config,  # Pass remaining config as kwargs
     )
 
@@ -121,12 +132,24 @@ def _create_pydantic_agent(bp: AgentConfig, api_key: str):
     agent_config = bp.config.copy()
     agent_config.pop("base_url", None)
     agent_config.pop("api_key", None)
+    tools = agent_config.pop("tools", [])
+
+    # Convert generic KiboTools to PydanticAI-compatible tools
+    # PydanticAI agents accept tools during instantiation (or via decorator) but
+    # the Agent constructor args vary.
+    # For now, we assume we pass them as a list if supported or iterate.
+    # Actually, PydanticAI Agent(..., tools=[...]) works for function tools.
+
+    final_tools = convert_tools(tools, "pydantic_ai")
 
     agent = Agent(
         model,
         system_prompt=sys_prompt,
-        **agent_config,  # Pass remaining config as kwargs
     )
+
+    # Register tools manually if not accepted in constructor kwargs for this specific version
+    for t in final_tools:
+        agent.tool(t)
 
     return PydanticAIAdapter(agent)
 
@@ -144,6 +167,9 @@ def _create_langchain_agent(bp: AgentConfig, api_key: str):
 
     tools = bp.config.get("tools", [])
     if tools:
+        # Convert generic KiboTools to LangChain-compatible tools
+        final_tools = convert_tools(tools, "langchain")
+
         from langchain.agents import AgentExecutor, create_tool_calling_agent
         from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 
@@ -155,8 +181,8 @@ def _create_langchain_agent(bp: AgentConfig, api_key: str):
             ]
         )
 
-        agent = create_tool_calling_agent(llm, tools, prompt)
-        agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+        agent = create_tool_calling_agent(llm, final_tools, prompt)
+        agent_executor = AgentExecutor(agent=agent, tools=final_tools, verbose=True)
 
         def to_dict_input(x):
             if isinstance(x, dict):
