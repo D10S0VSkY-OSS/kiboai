@@ -23,12 +23,12 @@ __all__ = [
     "AgentConfig",
     "KiboAgent",
     "create_agent",
-    "AgentRequest", 
-    "AgentResult", 
+    "AgentRequest",
+    "AgentResult",
     "AgentContext",
     "IAgentNode",
     "LazyAgentAdapter",
     "AgnoAdapter",
     "PydanticAIAdapter",
-    "LangGraphAdapter"
+    "LangGraphAdapter",
 ]

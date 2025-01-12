@@ -33,3 +33,8 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/kibo_core"]
+
+[dependency-groups]
+dev = [
+    "black>=26.1.0",
+]

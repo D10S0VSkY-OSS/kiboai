@@ -2,6 +2,7 @@ import sys
 import subprocess
 import shutil
 
+
 def main():
     """
     Kibo CLI entry point.
@@ -15,10 +16,9 @@ def main():
         print("  status   Show cluster status")
         print("  proxy    Manage the Kibo Gateway (LiteLLM Proxy)")
         sys.exit(1)
-    
+
     command = sys.argv[1]
     args = sys.argv[2:]
-
 
     if command == "start":
         ray_executable = shutil.which("ray")
@@ -27,51 +27,54 @@ def main():
             sys.exit(1)
 
         print(" Starting Kibo Node...")
-        
+
         start_flags = ["--disable-usage-stats"]
-        
+
         if "--head" in args:
-             start_flags.append("--include-dashboard=false")
-             print("Initializing Kibo Cluster Coordinator (Head Node)...")
+            start_flags.append("--include-dashboard=false")
+            print("Initializing Kibo Cluster Coordinator (Head Node)...")
         else:
-             print("Initializing Kibo Worker Node...")
-        
+            print("Initializing Kibo Worker Node...")
+
         final_args = args + [f for f in start_flags if f not in args]
-        
+
         cmd = [ray_executable, "start"] + final_args
-        
-        
+
         try:
             result = subprocess.run(cmd, check=True, capture_output=True, text=True)
-            
-            for line in result.stdout.split('\n'):
+
+            for line in result.stdout.split("\n"):
                 if "Local node IP" in line:
                     print(f"  {line.strip()}")
 
             print(" Kibo Node started successfully.")
-            
-            port = "6379" # Default
+
+            port = "6379"  # Default
             for i, arg in enumerate(args):
                 if arg.startswith("--port="):
                     port = arg.split("=")[1]
                 elif arg == "--port" and i + 1 < len(args):
                     port = args[i + 1]
-            
+
             print("\nNext steps:")
-            print(f"  To join a worker node to this cluster:")
-            print(f"    kibo start --address='<THIS_IP>:{port}'")
-            print(f"  To join a worker node to this cluster:")
-            print(f"    kibo start --address='<THIS_IP>:{port}'")
-                
+            if "--head" in args:
+                print(f"  To join a worker node to this cluster:")
+                print(f"    kibo start --address='<THIS_IP>:{port}'")
+            else:
+                print(f"  To check cluster status:")
+                print(f"    kibo status")
+
         except subprocess.CalledProcessError as e:
             print(f" Failed to start Kibo Node.")
             print(f"\n{e.stderr}")
-            
+
             print("\nTroubleshooting tips:")
             print("1. If you see 'Address already in use', port 6379 might be busy.")
             print("   -> Try stopping old processes: 'kibo stop' or 'pkill -f ray'")
             print("   -> Or run on a different port: 'kibo start --head --port=6380'")
-            print("2. If you see connection errors, ensure the Head node IP is reachable.")
+            print(
+                "2. If you see connection errors, ensure the Head node IP is reachable."
+            )
             sys.exit(e.returncode)
 
     elif command == "stop":
@@ -83,7 +86,7 @@ def main():
         print(" Stopping Kibo Node...")
         cmd = [ray_executable, "stop"] + args
         result = subprocess.run(cmd, capture_output=True, text=True)
-        
+
         if result.returncode == 0:
             print(" Kibo Node stopped.")
         else:
@@ -105,10 +108,10 @@ def main():
         if not args:
             print("Usage: kibo proxy [start|stop] [args]")
             sys.exit(1)
-        
+
         subcmd = args[0]
         proxy_args = args[1:]
-        
+
         litellm_executable = shutil.which("litellm")
         if not litellm_executable:
             litellm_executable = [sys.executable, "-m", "litellm"]
@@ -117,8 +120,12 @@ def main():
 
         if subcmd == "start":
             print(" Starting Kibo Gateway (LiteLLM Proxy)...")
-            cmd = litellm_executable + ["--port", "4000", "--telemetry", "False"] + proxy_args
-            
+            cmd = (
+                litellm_executable
+                + ["--port", "4000", "--telemetry", "False"]
+                + proxy_args
+            )
+
             try:
                 print("  Gateway listening at http://localhost:4000")
                 print("  Press Ctrl+C to stop.")
@@ -128,11 +135,15 @@ def main():
             except subprocess.CalledProcessError as e:
                 print(f" Failed to start Gateway.")
                 print(f"{e}")
-                
+
         elif subcmd == "stop":
-            print(" To stop the Gateway, simply press Ctrl+C in the terminal where it's running.")
-            print("   (Process management for the gateway is not yet daemonized in this version)")
-            
+            print(
+                " To stop the Gateway, simply press Ctrl+C in the terminal where it's running."
+            )
+            print(
+                "   (Process management for the gateway is not yet daemonized in this version)"
+            )
+
         else:
             print(f"Unknown proxy command: {subcmd}")
             print("Available proxy commands: start, stop")
@@ -142,6 +153,7 @@ def main():
         print(f"Unknown command: {command}")
         print("Available commands: start, stop, status, proxy")
         sys.exit(1)
+
 
 if __name__ == "__main__":
     main()

@@ -5,6 +5,7 @@ from kibo_core.application.workflow import DistributedWorkflowService
 from kibo_core.application.factory import create_distributed_agent
 from kibo_core.domain.entities import AgentResult
 
+
 class KiboFuture:
     def __init__(self, future):
         self._future = future
@@ -16,14 +17,15 @@ class KiboFuture:
         """
         return kibo_core.get(self._future)
 
+
 class KiboAgent:
     def __init__(self, config: AgentConfig, api_key: Optional[str] = None):
         kibo_core.init()
-        
+
         self.service = DistributedWorkflowService()
-        
+
         self.adapter = create_distributed_agent(config, api_key=api_key)
-        
+
     def run(self, input_data: Any) -> AgentResult:
         """
         Synchronous execution. Submits and waits for result.
@@ -36,10 +38,10 @@ class KiboAgent:
         Asynchronous execution. Returns a KiboFuture.
         """
         future = self.service.submit_agent_task(
-            agent=self.adapter,
-            input_data=input_data
+            agent=self.adapter, input_data=input_data
         )
         return KiboFuture(future)
+
 
 def create_agent(config: AgentConfig, api_key: Optional[str] = None) -> KiboAgent:
     """
