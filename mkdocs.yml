@@ -1,0 +1,59 @@
+site_name: Kibo AI
+site_url: https://d10s0vsky-oss.github.io/kiboai/
+site_description: The Universal Distributed Agent Framework
+repo_url: https://github.com/D10S0VSkY-OSS/kiboai
+repo_name: D10S0VSkY-OSS/kiboai
+
+theme:
+  name: material
+  palette:
+    # Palette toggle for light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: deep purple
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+
+    # Palette toggle for dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: deep purple
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - content.code.copy
+    - content.code.annotate
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true 
+
+nav:
+  - Home: index.md
+  - Getting Started: getting-started.md
+  - Core Concepts: concepts.md
+  - User Guide:
+    - Basic Usage: user-guide/basic-usage.md
+    - Framework Integrations: user-guide/frameworks.md
+    - Distributed Execution: user-guide/distributed.md
+    - AI Gateway: user-guide/gateway.md
+  - Examples:
+    - Simple Agents: examples/simple-agents.md
+    - Parallel Execution: examples/parallel.md
+    - Complex Workflows: examples/workflows.md
