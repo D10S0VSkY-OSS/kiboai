@@ -1,0 +1,86 @@
+services:
+  kibo-head:
+    build: .
+    container_name: kibo-head
+    command: uv run kibo start --head --port=6379 --block
+    ports:
+      - "6379:6379" # Ray Head / GCS
+      - "8265:8265" # Ray Dashboard
+      - "10001:10001" # Ray Client
+    env_file:
+      - .env
+    shm_size: 4g # increased shared memory
+    networks:
+      - kibo-net
+    healthcheck:
+      test: ["CMD-SHELL", "uv run ray status || exit 1"]
+      interval: 5s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
+
+  kibo-worker:
+    build: .
+    container_name: kibo-worker
+    command: uv run kibo start --address='kibo-head:6379' --block
+    depends_on:
+      kibo-head:
+        condition: service_healthy
+    env_file:
+      - .env
+    shm_size: 4g
+    networks:
+      - kibo-net
+
+  kibo-worker-2:
+    build: .
+    container_name: kibo-worker-2
+    command: uv run kibo start --address='kibo-head:6379' --block
+    depends_on:
+      kibo-head:
+        condition: service_healthy
+    env_file:
+      - .env
+    shm_size: 4g
+    networks:
+      - kibo-net
+
+  kibo-proxy:
+    build: .
+    container_name: kibo-proxy
+    command: uv run kibo proxy start --config examples/proxy_config.yaml
+    ports:
+      - "4000:4000"
+    depends_on:
+      kibo-head:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      - KIBO_PROXY_URL=http://0.0.0.0:4000
+    networks:
+      - kibo-net
+
+  kibo-client:
+    build: .
+    container_name: kibo-client
+    # Runs the workflow script inside the cluster network via Ray Client connection
+    command: uv run use_case/finance_workflow.py
+    environment:
+      - RAY_ADDRESS=ray://kibo-head:10001
+      - KIBO_PROXY_URL=http://kibo-proxy:4000
+    depends_on:
+      kibo-head:
+        condition: service_healthy
+      kibo-proxy:
+        condition: service_started
+      kibo-worker:
+        condition: service_started
+    env_file:
+      - .env
+    networks:
+      - kibo-net
+
+networks:
+  kibo-net:
+    driver: bridge
