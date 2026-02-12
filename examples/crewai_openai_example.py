@@ -10,7 +10,6 @@ def main():
         print("Error: OPENAI_API_KEY environment variable is not set.")
         sys.exit(1)
         
-    # Define Agent
     agent_def = AgentConfig(
         name='Economist',
         description='You are an expert in budget optimization.',
@@ -23,15 +22,12 @@ def main():
         }
     )
 
-    # create_agent handles Kibo initialization and connection
     agent = create_agent(agent_def, api_key=api_key)
 
     print("Dispatching Crew to Kibo Cluster...")
     try:
-        # Input maps to {{topic}}
         input_data = "saving money on LLM API usage" 
         
-        # Async execution example
         task = agent.run_async(input_data)
         result = task.result()
         

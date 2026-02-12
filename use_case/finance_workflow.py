@@ -1,21 +1,18 @@
 import asyncio
 import os
 import sys
-from typing import Optional, Any
+from typing import Optional, Any, List
 from dotenv import load_dotenv
 
-# Load params
 load_dotenv()
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
 
 from kibo_core import AgentConfig, create_agent
 
-# --- CONSTANTS ---
 PROXY_URL = os.getenv("KIBO_PROXY_URL", "http://localhost:4000")
 MODEL_NAME = "openai/gpt-4o-mini"
 TAVILY_KEY = os.getenv("TAVILY_API_KEY")
 
-# --- TOOL HELPERS ---
 def get_agno_tool(api_key: str):
     """Returns Agno Tavily Tool or None if import fails."""
     if not api_key: return None
@@ -65,11 +62,11 @@ def get_crewai_tool(api_key: str):
         except ImportError: return None
     return tool
 
-# --- AGENT FACTORY HELPER ---
-def make_agent(name: str, task: str, engine: str, tools: list = []) -> Any:
+def make_agent(name: str, task: str, engine: str, tools: Optional[List[Any]] = None) -> Any:
     """Simplified agent creation wrapper."""
     
-    # Base config for everyone + Determinism (temp=0)
+    tools = [] if tools is None else list(tools)
+
     config_params = {
         "base_url": PROXY_URL, 
         "temperature": 0.0,  # Deterministic output
@@ -85,18 +82,15 @@ def make_agent(name: str, task: str, engine: str, tools: list = []) -> Any:
         config=config_params
     ), api_key=os.getenv("OPENAI_API_KEY", "sk-dummy"))
 
-# --- COST CALCULATION ---
 def get_cost(res: Any) -> float:
     """Extracts cost from result metadata."""
     if not res or isinstance(res, Exception): return 0.0
     
-    # 1. Check for explicit cost in metadata (LangChain usage callback, etc)
     if res.metadata.get("cost") is not None:
         return float(res.metadata["cost"])
 
     usage = res.metadata.get("token_usage") or res.metadata.get("usage", {})
     
-    # Normalize PydanticAI
     if hasattr(usage, "request_tokens"):
         usage = {"prompt_tokens": usage.request_tokens, "completion_tokens": usage.response_tokens}
     elif hasattr(usage, "input_tokens"):
@@ -104,7 +98,6 @@ def get_cost(res: Any) -> float:
     elif hasattr(usage, "__dict__"):
         usage = usage.__dict__
 
-    # 2. Check metadata for LiteLLM cost fields
     if usage.get("response_cost") is not None:
         return float(usage["response_cost"])
     if usage.get("cost") is not None:
@@ -112,48 +105,44 @@ def get_cost(res: Any) -> float:
 
     p = usage.get("prompt_tokens", 0)
     c = usage.get("completion_tokens", 0)
-    # gpt-4o-mini rates (Fallback)
     return (p * 0.15 + c * 0.60) / 1_000_000
 
-# --- MAIN WORKFLOW ---
 async def main():
-    print(f"🚀 Starting Kibo Workflow [Model: {MODEL_NAME}]")
-    if not TAVILY_KEY: print("⚠️ Running in MOCK mode (No TAVILY_API_KEY)")
+    print(f" Starting Kibo Workflow [Model: {MODEL_NAME}]")
+    if not TAVILY_KEY: print(" Running in MOCK mode (No TAVILY_API_KEY)")
 
-    # 1. Define Agents (Concurrent setup)
     agents = [
         make_agent("GoldAgent", "Find current Gold/XAU price (USD).", "agno", [get_agno_tool(TAVILY_KEY)]),
         make_agent("CryptoAgent", "Summarize top Blockchain news.", "langchain", [get_langchain_tool(TAVILY_KEY)]),
         make_agent("StockAgent", "Get prices: NVDA, MSFT, GOOG.", "crewai", [get_crewai_tool(TAVILY_KEY)])
     ]
     
-    # 2. Parallel Execution
-    print("\n📡 Launching parallel tasks...")
+    print("\n Launching parallel tasks...")
     prompts = [
         "Price of Gold today?", 
         "Blockchain news summary.", 
         "Stock prices for NVDA, MSFT, GOOG."
     ]
     
-    # Submit all
     futures = [agent.run_async(p) for agent, p in zip(agents, prompts)]
     
-    # Wait for all
-    results = [f.result() for f in futures] # Blocking wait per task
+    results = await asyncio.gather(*[asyncio.to_thread(f.result) for f in futures], return_exceptions=True)
 
-    # 3. Process Results
     context = ""
     total_cost = 0.0
     
-    for res in results:
+    for i, res in enumerate(results):
+        if isinstance(res, Exception):
+            print(f" Task {i+1} failed: {res}")
+            continue
+
         cost = get_cost(res)
         total_cost += cost
         src = res.metadata.get('adapter', 'Unknown')
-        print(f"✅ {src} done (${cost:.6f})")
+        print(f" {src} done (${cost:.6f})")
         context += f"\n--- {src} Report ---\n{res.output_data}\n"
 
-    # 4. Final Advisor (PydanticAI)
-    print("\n🧠 Synthesizing advice...")
+    print("\n Synthesizing advice...")
     advisor = make_agent(
         "Advisor", 
         "Analyze reports. Suggest portfolio allocation (Stocks/Crypto/Gold). Explain why.", 

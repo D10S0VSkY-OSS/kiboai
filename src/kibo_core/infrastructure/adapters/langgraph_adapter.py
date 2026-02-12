@@ -11,14 +11,11 @@ class LangGraphAdapter(IAgentNode):
     def execute(self, request: AgentRequest) -> AgentResult:
         inputs = request.input_data
         
-        # Heuristic for input format
         if not isinstance(inputs, dict):
-             # Default LangGraph state usually has 'messages'
              inputs = {"messages": [("user", str(inputs))]}
         
         result = self.graph.invoke(inputs)
         
-        # Try to extract the last message content
         output = "No output found"
         if isinstance(result, dict) and "messages" in result:
              messages = result["messages"]

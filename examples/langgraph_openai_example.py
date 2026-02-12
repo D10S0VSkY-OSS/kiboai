@@ -10,7 +10,6 @@ def main():
         print("Error: OPENAI_API_KEY is not set.")
         return
 
-    # Define Agent
     agent_def = AgentConfig(
         name='PoetBot',
         description='A poet specialized in tech haikus.',
@@ -19,15 +18,12 @@ def main():
         model="gpt-4o-mini"
     )
 
-    # Automatically initialized
     agent = create_agent(agent_def, api_key=api_key)
 
     print("Dispatching task...")
     try:
-        # LangGraph input structure
         input_data = {"messages": [HumanMessage(content="Write a haiku about distributed systems.")]}
         
-        # Sync run
         result = agent.run(input_data)
         
         print("\nResult:")

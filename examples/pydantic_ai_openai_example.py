@@ -9,7 +9,6 @@ def main():
         print("Error: OPENAI_API_KEY is not set.")
         return
 
-    # Define Agent
     agent_def = AgentConfig(
         name='GeneralBot',
         description='A general purpose assistant',
@@ -18,12 +17,10 @@ def main():
         model="gpt-4o-mini"
     )
     
-    # Automatically initialized
     agent = create_agent(agent_def, api_key=api_key)
 
     print("Dispatching task...")
     try:
-        # Sync run
         result = agent.run("What is the capital of France?")
         
         print("\nResult:")

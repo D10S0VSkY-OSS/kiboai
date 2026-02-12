@@ -9,10 +9,8 @@ class PydanticAIAdapter(IAgentNode):
         self.agent = agent
 
     def execute(self, request: AgentRequest) -> AgentResult:
-        # PydanticAI agents have .run_sync()
         input_text = str(request.input_data)
         
-        # PydanticAI RunResult object
         result = self.agent.run_sync(input_text)
         
         return AgentResult(

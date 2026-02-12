@@ -17,10 +17,8 @@ class MockEchoAgentAdapter(BaseAgentAdapter):
     Simple adapter for testing. Returns the input as output.
     """
     def execute(self, request: AgentRequest) -> AgentResult:
-        # Simulate processing
         input_text = str(request.input_data)
         
-        # Check for specific framework params if they exist (Demo of pass-through)
         prefix = request.context.params.get("echo_prefix", "Echo: ")
         
         output = f"{prefix}{input_text}"

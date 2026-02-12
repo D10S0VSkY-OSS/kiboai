@@ -5,7 +5,6 @@ from kibo_core import AgentConfig, create_agent
 def main():
     print("--- LangChain + Ollama + Kibo Blueprint Example ---")
     
-    # Define Agent
     agent_def = AgentConfig(
         name='Jester',
         description='A funny bot',
@@ -14,12 +13,10 @@ def main():
         model="ollama/llama3.1"
     )
 
-    # Automatically initialized
     agent = create_agent(agent_def)
 
     print("Dispatching job to Kibo Cluster...")
     try:
-        # Sync run
         result = agent.run("software architects")
         
         print("\n--- Result ---")

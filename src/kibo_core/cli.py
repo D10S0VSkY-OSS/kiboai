@@ -13,62 +13,58 @@ def main():
         print("  start    Start a Kibo node (Head or Worker)")
         print("  stop     Stop the Kibo node")
         print("  status   Show cluster status")
+        print("  proxy    Manage the Kibo Gateway (LiteLLM Proxy)")
         sys.exit(1)
     
     command = sys.argv[1]
     args = sys.argv[2:]
-    
-    ray_executable = shutil.which("ray")
-    if not ray_executable:
-        print("Error: 'ray' executable not found. Please install dependencies.")
-        sys.exit(1)
+
 
     if command == "start":
-        # kibo start --head ... -> ray start --head ...
-        print("🚀 Starting Kibo Node...")
+        ray_executable = shutil.which("ray")
+        if not ray_executable:
+            print("Error: 'ray' executable not found. Please install dependencies.")
+            sys.exit(1)
+
+        print(" Starting Kibo Node...")
         
-        # Enforce silent startup flags to hide Ray branding where possible
         start_flags = ["--disable-usage-stats"]
         
-        # Only include dashboard flag if it IS the head node, otherwise Ray complains
         if "--head" in args:
              start_flags.append("--include-dashboard=false")
              print("Initializing Kibo Cluster Coordinator (Head Node)...")
         else:
              print("Initializing Kibo Worker Node...")
         
-        # Only add if not already present in user args to avoid duplicates
         final_args = args + [f for f in start_flags if f not in args]
         
         cmd = [ray_executable, "start"] + final_args
         
-        # print(f"DEBUG: Executing {' '.join(cmd)}")
         
         try:
-            # Capture output to suppress Ray branding/welcome message
             result = subprocess.run(cmd, check=True, capture_output=True, text=True)
             
-            # We still want to show the Local IP if Ray reported it
             for line in result.stdout.split('\n'):
                 if "Local node IP" in line:
-                    print(f"ℹ️  {line.strip()}")
+                    print(f"  {line.strip()}")
 
-            print("✅ Kibo Node started successfully.")
+            print(" Kibo Node started successfully.")
             
-            if "--head" in args:
-                # Custom Kibo instructions instead of Ray's
-                port = "6379" # Default
-                for arg in args:
-                    if arg.startswith("--port="):
-                         port = arg.split("=")[1]
-                
-                print("\nNext steps:")
-                print(f"  To join a worker node to this cluster:")
-                print(f"    kibo start --address='<THIS_IP>:{port}'")
+            port = "6379" # Default
+            for i, arg in enumerate(args):
+                if arg.startswith("--port="):
+                    port = arg.split("=")[1]
+                elif arg == "--port" and i + 1 < len(args):
+                    port = args[i + 1]
+            
+            print("\nNext steps:")
+            print(f"  To join a worker node to this cluster:")
+            print(f"    kibo start --address='<THIS_IP>:{port}'")
+            print(f"  To join a worker node to this cluster:")
+            print(f"    kibo start --address='<THIS_IP>:{port}'")
                 
         except subprocess.CalledProcessError as e:
-            print(f"❌ Failed to start Kibo Node.")
-            # If it failed, show why (stderr)
+            print(f" Failed to start Kibo Node.")
             print(f"\n{e.stderr}")
             
             print("\nTroubleshooting tips:")
@@ -79,18 +75,33 @@ def main():
             sys.exit(e.returncode)
 
     elif command == "stop":
-        print("🛑 Stopping Kibo Node...")
+        ray_executable = shutil.which("ray")
+        if not ray_executable:
+            print("Error: 'ray' executable not found. Please install dependencies.")
+            sys.exit(1)
+
+        print(" Stopping Kibo Node...")
         cmd = [ray_executable, "stop"] + args
-        # Suppress output to hide "Stopped all X Ray processes"
-        subprocess.run(cmd, capture_output=True)
-        print("✅ Kibo Node stopped.")
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        
+        if result.returncode == 0:
+            print(" Kibo Node stopped.")
+        else:
+            print(" Failed to stop Kibo Node.")
+            if result.stderr:
+                print(f"Error details:\n{result.stderr}")
+            sys.exit(result.returncode)
 
     elif command == "status":
+        ray_executable = shutil.which("ray")
+        if not ray_executable:
+            print("Error: 'ray' executable not found. Please install dependencies.")
+            sys.exit(1)
+
         cmd = [ray_executable, "status"] + args
         subprocess.run(cmd)
 
     elif command == "proxy":
-        # Handle LiteLLM Proxy commands
         if not args:
             print("Usage: kibo proxy [start|stop] [args]")
             sys.exit(1)
@@ -100,38 +111,32 @@ def main():
         
         litellm_executable = shutil.which("litellm")
         if not litellm_executable:
-            # Fallback to python -m litellm if executable not in path but module installed
             litellm_executable = [sys.executable, "-m", "litellm"]
         else:
             litellm_executable = [litellm_executable]
 
         if subcmd == "start":
-            print("🌐 Starting Kibo Gateway (LiteLLM Proxy)...")
-            # Default port 4000
+            print(" Starting Kibo Gateway (LiteLLM Proxy)...")
             cmd = litellm_executable + ["--port", "4000", "--telemetry", "False"] + proxy_args
             
             try:
-                # Run in foreground or detached? 
-                # For a CLI 'start' usually implies a daemon or blocking. 
-                # Let's run blocking for now so user can see logs, or they can use nohup etc.
-                # But Kibo start (ray) runs as daemon. 
-                # LiteLLM doesn't have a native daemon mode flag easily accessible here without more work.
-                # We will run it and print instruction to use Ctrl+C or run in background.
-                print("ℹ️  Gateway listening at http://localhost:4000")
-                print("ℹ️  Press Ctrl+C to stop.")
+                print("  Gateway listening at http://localhost:4000")
+                print("  Press Ctrl+C to stop.")
                 subprocess.run(cmd, check=True)
             except KeyboardInterrupt:
-                print("\n🛑 Gateway stopped.")
+                print("\n Gateway stopped.")
             except subprocess.CalledProcessError as e:
-                print(f"❌ Failed to start Gateway.")
+                print(f" Failed to start Gateway.")
                 print(f"{e}")
                 
         elif subcmd == "stop":
-            print("🛑 To stop the Gateway, simply press Ctrl+C in the terminal where it's running.")
+            print(" To stop the Gateway, simply press Ctrl+C in the terminal where it's running.")
             print("   (Process management for the gateway is not yet daemonized in this version)")
             
         else:
             print(f"Unknown proxy command: {subcmd}")
+            print("Available proxy commands: start, stop")
+            sys.exit(1)
 
     else:
         print(f"Unknown command: {command}")

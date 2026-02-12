@@ -18,12 +18,7 @@ class RayDistributedExecutor:
         kibo_init(address=address)
 
     def execute_remote(self, agent_adapter: IAgentNode, request: AgentRequest) -> Any:
-        # Note: Passing the actual instance might be tricky if it's not picklable.
-        # Ideally, we pass the class and config to instantiate it remotely.
-        # For this PoC, we assume the adapter is an Actor or we wrap it in a Task.
         
-        # Strategy: Use a Generic Ray Runner Actor
-        # This creates a Ray Actor that wraps our Domain Agent
         runner = RemoteAgentRunner.remote(agent_adapter)
         return runner.run.remote(request)
 
