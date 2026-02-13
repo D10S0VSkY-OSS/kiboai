@@ -16,6 +16,7 @@ def main():
         instructions="Analyze the user input and provide a summary with 3 bullet points.",
         agent="agno",
         model="gpt-4o-mini",
+        distributed=True,
         config={"markdown": True},
     )
 

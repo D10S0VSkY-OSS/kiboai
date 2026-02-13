@@ -2,11 +2,22 @@ import ray
 import logging
 from kibo_core.utils.logging import silence_ray_logs
 
+_DISTRIBUTED_MODE = False
 
-def kibo_init(address: str = None, **kwargs):
+
+def kibo_init(address: str = None, distributed_execution: bool = False, **kwargs):
     """
     Initialize Kibo Distributed Runtime.
+    :param distributed_execution: If True, connects to or starts a distributed runtime.
+                                  If False, runs in local mode (no cluster). Default is False.
     """
+    global _DISTRIBUTED_MODE
+    _DISTRIBUTED_MODE = distributed_execution
+
+    if not distributed_execution:
+        print("Running in LOCAL mode (Distributed execution disabled).")
+        return None
+
     silence_ray_logs()
     print("Initializing Kibo Runtime...")
 
@@ -104,9 +115,18 @@ def kibo_init(address: str = None, **kwargs):
         return ray.init(address=address, ignore_reinit_error=True, **kwargs)
 
 
-def get(object_ref):
+def get(object_ref, **kwargs):
     """
     Get a remote object or a list of remote objects from the object store.
     Wrapper around ray.get().
+    If distributed mode is disabled, returns object_ref immediately assuming it's the result.
+    If object_ref is a concurrent.futures.Future, waits for its result.
     """
-    return ray.get(object_ref)
+    if not _DISTRIBUTED_MODE:
+        from concurrent.futures import Future
+
+        if isinstance(object_ref, Future):
+            return object_ref.result()
+        return object_ref
+
+    return ray.get(object_ref, **kwargs)

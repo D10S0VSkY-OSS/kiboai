@@ -17,6 +17,11 @@ class AgentConfig(BaseModel):
         ..., description="Goal, system prompt, or specific instructions for behavior."
     )
 
+    distributed: bool = Field(
+        False,
+        description="Whether this agent is designed to run on a cluster by default.",
+    )
+
     agent: str = Field(
         "crewai",
         description="The underlying engine to use: 'crewai', 'agno', 'langchain', 'pydantic_ai'",

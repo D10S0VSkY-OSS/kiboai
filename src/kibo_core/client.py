@@ -19,33 +19,57 @@ class KiboFuture:
 
 
 class KiboAgent:
-    def __init__(self, config: AgentConfig, api_key: Optional[str] = None):
-        kibo_core.init()
+    def __init__(
+        self,
+        config: AgentConfig,
+        api_key: Optional[str] = None,
+        enable_distributed_execution: Optional[bool] = None,
+    ):
+        # Determine execution mode: Explicit Arg > Config > Default (False)
+        self.is_distributed = (
+            enable_distributed_execution
+            if enable_distributed_execution is not None
+            else config.distributed
+        )
 
-        self.service = DistributedWorkflowService()
+        kibo_core.init(distributed_execution=self.is_distributed)
+
+        self.service = DistributedWorkflowService(
+            enable_distributed_execution=self.is_distributed
+        )
 
         self.adapter = create_distributed_agent(config, api_key=api_key)
 
-    def run(self, input_data: Any) -> AgentResult:
+    def run(self, input_data: Any, distributed: Optional[bool] = None) -> AgentResult:
         """
         Synchronous execution. Submits and waits for result.
+        :param distributed: Override execution mode for this run.
         """
-        future = self.run_async(input_data)
+        future = self.run_async(input_data, distributed=distributed)
         return future.result()
 
-    def run_async(self, input_data: Any) -> KiboFuture:
+    def run_async(
+        self, input_data: Any, distributed: Optional[bool] = None
+    ) -> KiboFuture:
         """
         Asynchronous execution. Returns a KiboFuture.
+        :param distributed: Override execution mode for this run.
         """
         future = self.service.submit_agent_task(
-            agent=self.adapter, input_data=input_data
+            agent=self.adapter, input_data=input_data, distributed=distributed
         )
         return KiboFuture(future)
 
 
-def create_agent(config: AgentConfig, api_key: Optional[str] = None) -> KiboAgent:
+def create_agent(
+    config: AgentConfig,
+    api_key: Optional[str] = None,
+    enable_distributed_execution: Optional[bool] = None,
+) -> KiboAgent:
     """
     High-level factory to create a ready-to-use KiboAgent.
     Automatically initializes the Kibo runtime if needed.
+    :param enable_distributed_execution: If True, uses Ray Cluster. If False, runs locally.
+                                         If None, uses the setting from AgentConfig.
     """
-    return KiboAgent(config, api_key)
+    return KiboAgent(config, api_key, enable_distributed_execution)

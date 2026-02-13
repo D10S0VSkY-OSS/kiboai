@@ -17,7 +17,7 @@ class RayDistributedExecutor:
         If address is None or 'auto', tries to connect to existing cluster,
         falls back to starting a local instance.
         """
-        kibo_init(address=address)
+        kibo_init(address=address, distributed_execution=True)
 
     def execute_remote(self, agent_adapter: IAgentNode, request: AgentRequest) -> Any:
 
