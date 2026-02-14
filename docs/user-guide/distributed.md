@@ -1,40 +1,82 @@
-# Distributed Execution
+# Distributed & Parallel Execution
 
-Kibo runs on **Ray**, allowing easy parallelization.
+Kibo leverages **Ray** to enable true distributed execution of AI agents. This allows you to scale from running multiple agents in parallel on a single machine to running them across a cluster of servers.
 
-## The Async Pattern
+## Local vs. Distributed Mode
 
-When you use `run_async`, Kibo submits the task to the Ray cluster (or local Ray instance). It returns a `KiboFuture`.
+### Local Mode (Default)
+By default (`distributed=False`), Kibo runs agents in the same process or using standard thread pools. This is ideal for:
+- Development and debugging.
+- Simple, low-latency tasks.
+- Environments where installing Ray is not possible.
 
-Because `KiboFuture.result()` internally calls `ray.get()`, it is a blocking operation. To check results asynchronously in an `asyncio` loop, wrap it:
+### Distributed Mode
+When `distributed=True` is set, Kibo spins up a Ray cluster (if one isn't already running) and deploys each agent as a separate **Ray Actor**. This is ideal for:
+- Heavy computational tasks.
+- Running massive numbers of agents in parallel.
+- Workflows that need to survive a single process crash.
+
+## Enabling Distributed Execution
+
+You can enable distributed execution in two ways:
+
+1.  **Via Agent Config:**
+    ```python
+    config = AgentConfig(
+        name="Worker", 
+        agent="crewai", 
+        distributed=True,  # <--- Here
+        ...
+    )
+    ```
+
+2.  **Via Factory:**
+    ```python
+    agent = create_agent(config, enable_distributed_execution=True)
+    ```
+
+## Example: Parallel Execution
+
+See `examples/parallel_execution_example.py` for a complete runnable script.
 
 ```python
-import asyncio
-from kibo_core import create_agent, AgentConfig
+import time
+from kibo_core import AgentConfig, create_agent
 
-async def gather_results(agents, inputs):
-    # 1. Dispatch all tasks (Non-blocking submit)
-    futures = [agent.run_async(inp) for agent, inp in zip(agents, inputs)]
-    
-    # 2. Wait for them concurrently
-    # We use to_thread because .result() blocks the CPU
-    results = await asyncio.gather(
-        *[asyncio.to_thread(f.result) for f in futures]
+tasks = ["Task A", "Task B", "Task C"]
+futures = []
+
+print("Submitting tasks...")
+for name in tasks:
+    # 1. Configure agent to run distributed
+    config = AgentConfig(
+        name=name,
+        instructions="Work hard",
+        agent="mock",
+        distributed=True
     )
-    return results
+    
+    # 2. Create agent
+    agent = create_agent(config)
+    
+    # 3. Submit async task
+    # This returns immediately while the agent runs on a Ray worker
+    future = agent.run_async("Start")
+    futures.append(future)
+
+# 4. Gather results
+print("Waiting for results...")
+results = [f.result() for f in futures]
 ```
 
-## Running the Cluster
+## Managing the Cluster
 
-For true distributed execution across nodes:
+You can manage the Kibo runtime using the CLI:
 
-1.  Start the **Head Node**:
-    ```bash
-    uv run kibo start --head --port=6379
-    ```
-2.  Start **Worker Nodes** (on other machines):
-    ```bash
-    uv run kibo start --address='<HEAD_IP>:6379'
-    ```
+```bash
+# Start a head node (on your main machine)
+uv run kibo start --head
 
-Kibo will automatically schedule tasks across the available resources.
+# Stop the cluster
+uv run kibo stop
+```

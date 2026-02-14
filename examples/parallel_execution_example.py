@@ -27,6 +27,7 @@ def main():
             instructions="Sleep for a bit.",
             agent="mock",
             model="none",
+            distributed=True,
             config={"duration": duration},
         )
 

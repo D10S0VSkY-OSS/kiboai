@@ -1,6 +1,6 @@
 # Basic Usage
 
-This guide covers how to create simple agents using the Kibo SDK.
+This guide covers how to create simple agents and use native tools.
 
 ## Defining an Agent
 
@@ -13,19 +13,55 @@ agent_def = AgentConfig(
     name="MathTutor",
     description="You are a patient math tutor.",
     instructions="Explain the solution step-by-step.",
-    agent="agno",
+    agent="agno",      # 'agno', 'langchain', 'crewai', 'pydantic_ai'
     model="gpt-4o-mini"
 )
 ```
 
-## Creating the Instance
+## Using Native Tools
 
-Use the `create_agent` factory. This function detects the requested engine (`agno`, `langchain`, etc.) and returns the appropriate adapter.
+Kibo provides first-class support for the native tool ecosystems of underlying frameworks. You can instantiate a tool from a library (like `langchain_community` or `agno.tools`) and pass it directly to the `config` dictionary.
+
+### Example: Using Agno YFinance Tool
+```python
+from kibo_core import create_agent, AgentConfig
+from agno.tools.yfinance import YFinanceTools
+
+# Instantiate the native tool
+tool = YFinanceTools()
+
+config = AgentConfig(
+    name="FinanceBot",
+    description="Analyst",
+    instructions="Check stock prices.",
+    agent="agno",
+    config={
+        "tools": [tool] # Pass it directly in the list
+    }
+)
+
+agent = create_agent(config, api_key="sk-...")
+agent.run("AAPL price")
+```
+
+### Example: Using Custom Python Functions (PydanticAI)
+For frameworks like PydanticAI, you can simply pass python functions.
 
 ```python
-from kibo_core import create_agent
+import random
 
-agent = create_agent(agent_def, api_key="sk-...")
+def roll_die(sides: int = 6) -> str:
+    return str(random.randint(1, sides))
+
+config = AgentConfig(
+    name="GameMaster",
+    description="DM",
+    instructions="Roll dice.",
+    agent="pydantic_ai",
+    config={
+        "tools": [roll_die]
+    }
+)
 ```
 
 ## Running an Agent
@@ -39,14 +75,9 @@ print(result.output_data)  # "The square root of 144 is 12."
 print(result.metadata)     # Contains usage info, adapter name, etc.
 ```
 
-### Asynchronous
+### Asynchronous (Future-based)
 ```python
-import asyncio
-
-async def main():
-    result = agent.run_async("What is pi?") # Returns a KiboFuture
-    # To wait for the result:
-    final = result.result() # Blocking call on the future
-    # OR in a truly async loop (with asyncio.to_thread wrapping)
-    # See Distributed Execution section for best practices.
+future = agent.run_async("What is pi?") 
+# Do other work...
+result = future.result() # Blocks until completion
 ```

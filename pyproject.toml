@@ -5,7 +5,7 @@ description = "Universal Distributed Agent Framework"
 readme = "README.md"
 requires-python = ">=3.11, <3.14"
 dependencies = [
-    "ray",
+    "ray[default]==2.53.0",
     "pydantic",
     "langchain",
     "langgraph",
