@@ -12,8 +12,12 @@ from pydantic import BaseModel, Field
 # Since crewai-tools package might be unstable, we define a custom BaseTool
 # consistent with CrewAI's best practices.
 
+
 class CalculatorInput(BaseModel):
-    expression: str = Field(..., description="The mathematical expression to evaluate (e.g., '2 + 2')")
+    expression: str = Field(
+        ..., description="The mathematical expression to evaluate (e.g., '2 + 2')"
+    )
+
 
 class CalculatorTool(BaseTool):
     name: str = "Calculator"
@@ -27,8 +31,10 @@ class CalculatorTool(BaseTool):
         except Exception as e:
             return f"Error: {e}"
 
+
 # Instantiate tool
 calc_tool = CalculatorTool()
+
 
 def main():
     print("--- CrewAI Agent with Native Tool (Custom Calculator) ---")
@@ -39,10 +45,7 @@ def main():
         description="A professor who excels at math.",
         instructions="Calculate 123 * 456 and explain the result simply.",
         agent="crewai",
-        config={
-            "verbose": True,
-            "tools": [calc_tool] # Pass CrewAI BaseTool directly
-        }
+        config={"verbose": True, "tools": [calc_tool]},  # Pass CrewAI BaseTool directly
     )
 
     # Create & Run
@@ -54,6 +57,7 @@ def main():
         print(result.output_data)
     except Exception as e:
         print(f"Error: {e}")
+
 
 if __name__ == "__main__":
     main()

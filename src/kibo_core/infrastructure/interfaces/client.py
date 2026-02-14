@@ -24,6 +24,7 @@ class KiboAgent:
         config: AgentConfig,
         api_key: Optional[str] = None,
         enable_distributed_execution: Optional[bool] = None,
+        adapter: Optional[Any] = None,
     ):
         # Determine execution mode: Explicit Arg > Config > Default (False)
         self.is_distributed = (
@@ -38,7 +39,10 @@ class KiboAgent:
             enable_distributed_execution=self.is_distributed
         )
 
-        self.adapter = create_distributed_agent(config, api_key=api_key)
+        if adapter:
+            self.adapter = adapter
+        else:
+            self.adapter = create_distributed_agent(config, api_key=api_key)
 
     def run(self, input_data: Any, distributed: Optional[bool] = None) -> AgentResult:
         """
@@ -65,11 +69,15 @@ def create_agent(
     config: AgentConfig,
     api_key: Optional[str] = None,
     enable_distributed_execution: Optional[bool] = None,
+    adapter: Optional[Any] = None,
 ) -> KiboAgent:
     """
     High-level factory to create a ready-to-use KiboAgent.
     Automatically initializes the Kibo runtime if needed.
     :param enable_distributed_execution: If True, uses Ray Cluster. If False, runs locally.
                                          If None, uses the setting from AgentConfig.
+
+    :param adapter: Optional adapter instance. If provided, it overrides the default factory creation.
+                    Useful for passing pre-configured graphs (LangGraph) or teams (CrewAI/Agno).
     """
-    return KiboAgent(config, api_key, enable_distributed_execution)
+    return KiboAgent(config, api_key, enable_distributed_execution, adapter=adapter)

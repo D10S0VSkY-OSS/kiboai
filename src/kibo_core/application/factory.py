@@ -116,7 +116,7 @@ def _create_pydantic_agent(bp: AgentConfig, api_key: str):
     from pydantic_ai.models.openai import OpenAIModel
     from pydantic_ai.providers.openai import OpenAIProvider
     from kibo_core.infrastructure.adapters.pydantic_ai_adapter import PydanticAIAdapter
-    from kibo_core.utils.logging import logger
+    from kibo_core.shared_kernel.logging import logger
 
     base_url, final_key = _resolve_llm_params(bp, api_key)
 
@@ -166,7 +166,9 @@ def _create_pydantic_agent(bp: AgentConfig, api_key: str):
             if first_param.annotation != inspect.Parameter.empty:
                 # Check if it's RunContext type
                 # We can check string representation to be safe against imports
-                logger.info(f"Checking tool {t.__name__} param {first_param.name} type: {first_param.annotation}")
+                logger.info(
+                    f"Checking tool {t.__name__} param {first_param.name} type: {first_param.annotation}"
+                )
                 if "RunContext" in str(first_param.annotation):
                     is_context_aware = True
 

@@ -5,11 +5,13 @@ import sys
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "src"))
 
 from kibo_core import AgentConfig, create_agent
+
 try:
     from agno.tools.yfinance import YFinanceTools
 except ImportError:
     print("Please install agno and yfinance: uv add agno yfinance")
     sys.exit(1)
+
 
 def main():
     print("--- Agno (Phidata) Agent with Native Tool (YFinance) ---")
@@ -27,8 +29,8 @@ def main():
         config={
             # Agno specific configs
             "markdown": True,
-            "tools": [agno_tool] # Pass native tool directly
-        }
+            "tools": [agno_tool],  # Pass native tool directly
+        },
     )
 
     # 3. Create & Run
@@ -41,6 +43,7 @@ def main():
         print(result.output_data)
     except Exception as e:
         print(f"Error: {e}")
+
 
 if __name__ == "__main__":
     main()

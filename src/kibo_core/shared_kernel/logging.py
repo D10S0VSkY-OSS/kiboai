@@ -16,9 +16,11 @@ def setup_logger(name="kibo"):
     )
     return logging.getLogger(name)
 
+
 # Expose a default logger instance
 logger = setup_logger()
 on_worker = False
+
 
 def silence_ray_logs():
     """

@@ -15,7 +15,8 @@ class CrewAIAdapter(IAgentNode):
     def execute(self, request: AgentRequest) -> AgentResult:
         inputs = request.input_data
         if not isinstance(inputs, dict):
-            inputs = {"topic": str(inputs)}
+            # Default to 'input' generic key, but keep 'topic' for backward compat or specific prompt templates
+            inputs = {"input": str(inputs), "topic": str(inputs)}
 
         result = self.crew.kickoff(inputs=inputs)
 

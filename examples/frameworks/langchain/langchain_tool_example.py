@@ -8,7 +8,9 @@ from kibo_core import AgentConfig, create_agent
 
 # Set a dummy key to avoid init errors if the user hasn't set it yet
 if "SERPER_API_KEY" not in os.environ:
-    print("Notice: SERPER_API_KEY not found. Using a placeholder. Execution will fail unless set.")
+    print(
+        "Notice: SERPER_API_KEY not found. Using a placeholder. Execution will fail unless set."
+    )
     os.environ["SERPER_API_KEY"] = "sk-placeholder"
 
 try:
@@ -18,13 +20,14 @@ except ImportError:
     print("Please install langchain-community: uv add langchain-community")
     sys.exit(1)
 
+
 def main():
     print("--- LangChain Agent with Native Tool (Google Serper) ---")
 
     # 1. Initialize Native LangChain Tool
     # Custom wrapper around Google Serper API
     search = GoogleSerperAPIWrapper()
-    
+
     # Wrap in a standard Tool for the agent
     serper_tool = Tool(
         name="google_serper",
@@ -38,10 +41,7 @@ def main():
         description="An internet researcher powered by LangChain.",
         instructions="Search for 'Kibo AI framework' using Google Serper and summarize results.",
         agent="langchain",
-        config={
-            "verbose": True,
-            "tools": [serper_tool] # Pass native tool directly
-        }
+        config={"verbose": True, "tools": [serper_tool]},  # Pass native tool directly
     )
 
     # 3. Create & Run
@@ -53,6 +53,7 @@ def main():
         print(result.output_data)
     except Exception as e:
         print(f"Error executing agent: {e}")
+
 
 if __name__ == "__main__":
     main()

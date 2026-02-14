@@ -1,4 +1,8 @@
 model_list:
+  - model_name: gpt-4o
+    litellm_params:
+      model: openai/gpt-4o
+      
   - model_name: gpt-4o-mini
     litellm_params:
       model: openai/gpt-4o-mini  # Requires OPENAI_API_KEY in environment

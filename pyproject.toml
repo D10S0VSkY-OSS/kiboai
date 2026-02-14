@@ -26,7 +26,7 @@ dependencies = [
 ]
 
 [project.scripts]
-kibo = "kibo_core.cli:main"
+kibo = "kibo_core.infrastructure.interfaces.cli:main"
 
 [build-system]
 requires = ["hatchling"]
