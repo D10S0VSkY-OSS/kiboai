@@ -11,17 +11,69 @@ def main():
     if len(sys.argv) < 2:
         print("Usage: kibo <command> [args]")
         print("Commands:")
-        print("  start    Start a Kibo node (Head or Worker)")
+        print("  start    Start a Kibo node (Head or Worker) or Service (db)")
+        print("           Usage: kibo start [args | db]")
         print("  start-all Start Kibo Head Node + Gateway (Proxy)")
         print("  stop     Stop the Kibo node")
         print("  status   Show cluster status")
         print("  proxy    Manage the Kibo Gateway (LiteLLM Proxy)")
+        print("  memory   Manage Kibo Memory (Mem0)")
         sys.exit(1)
 
     command = sys.argv[1]
     args = sys.argv[2:]
 
+    if command == "memory":
+        try:
+            from kibo_core.infrastructure.memory import KiboMemory
+
+            mem = KiboMemory()
+
+            action = args[0] if args else "help"
+
+            if action == "add" and len(args) > 1:
+                text = " ".join(args[1:])
+                # Construct a simple message format for Mem0 if needed, or string
+                # Mem0 add takes messages which can be list of dicts or strings
+                result = mem.add(
+                    text, user_id="cli_user"
+                )  # Assuming string works or adjusted
+                print(f"Added memory: {text}")
+            elif action == "search" and len(args) > 1:
+                query = " ".join(args[1:])
+                results = mem.search(query, user_id="cli_user")
+                print(f"Found {len(results)} memories:")
+                for r in results:
+                    print(f"- {r.get('memory', r)}")
+            elif action == "list":
+                results = mem.get_all(user_id="cli_user")
+                print(f"All memories for cli_user:")
+                for r in results:
+                    print(f"- {r.get('memory', r)}")
+            else:
+                print("Usage: kibo memory [add <text> | search <query> | list]")
+
+        except ImportError:
+            print("Error: mem0ai not installed/configured properly.")
+        except Exception as e:
+            from traceback import print_exc
+
+            print(f"Error accessing memory: {e}")
+            print_exc()
+        sys.exit(0)
+
     if command == "start":
+        if args and args[0] == "db":
+            print("Starting ChromaDB Server...")
+            chroma_cmd = ["chroma", "run", "--port", "8000", "--path", "chroma_db"]
+            try:
+                subprocess.run(chroma_cmd, check=True)
+            except KeyboardInterrupt:
+                print("ChromaDB stopped.")
+            except Exception as e:
+                print(f"Error starting ChromaDB: {e}")
+            sys.exit(0)
+
         ray_executable = shutil.which("ray")
         if not ray_executable:
             print("Error: 'ray' executable not found. Please install dependencies.")

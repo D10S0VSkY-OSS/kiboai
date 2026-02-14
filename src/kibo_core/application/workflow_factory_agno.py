@@ -64,15 +64,17 @@ def _compile_workflow_to_agno(config: WorkflowConfig, api_key: str) -> BaseAgent
         # Check for Kibo Proxy configuration (Environment)
         base_url = None
         proxy_url = os.getenv("KIBO_PROXY_URL")
-        
+
         # Logic to handle Proxy URL and API Key for Agno
         final_api_key = api_key
         if proxy_url:
             base_url = proxy_url
             if not final_api_key:
-                final_api_key = "sk-kibo-proxy" # Dummy key for LiteLLM proxy
-        
-        agent_kwargs["model"] = OpenAIChat(id=manager_model_id, api_key=final_api_key, base_url=base_url)
+                final_api_key = "sk-kibo-proxy"  # Dummy key for LiteLLM proxy
+
+        agent_kwargs["model"] = OpenAIChat(
+            id=manager_model_id, api_key=final_api_key, base_url=base_url
+        )
 
     if "markdown" not in agent_kwargs:
         agent_kwargs["markdown"] = True

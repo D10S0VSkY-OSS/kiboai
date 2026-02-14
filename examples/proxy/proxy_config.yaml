@@ -1,19 +1,23 @@
 model_list:
   - model_name: gpt-4o
     litellm_params:
-      model: openai/gpt-4o
-      
+      model: openai/gpt-4o # Valid standard model
+      rpm: 1000
+      tpm: 100000
+
   - model_name: gpt-4o-mini
     litellm_params:
       model: openai/gpt-4o-mini  # Requires OPENAI_API_KEY in environment
       rpm: 1000                  # Max 10 requests per minute
       tpm: 100000                # Max 10k tokens per minute
-      fallbacks: ["backup-model"]
+
+  - model_name: text-embedding-3-small
+    litellm_params:
+      model: openai/text-embedding-3-small
 
   - model_name: backup-model
     litellm_params:
       model: openai/gpt-3.5-turbo
-
 # general_settings:
 #   master_key: sk-admin-master
 

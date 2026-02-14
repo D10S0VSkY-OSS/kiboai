@@ -23,6 +23,8 @@ dependencies = [
     "mkdocs>=1.6.1",
     "mkdocs-material>=9.7.1",
     "yfinance>=1.1.0",
+    "mem0ai>=1.0.3",
+    "chromadb>=1.1.1",
 ]
 
 [project.scripts]
