@@ -15,7 +15,7 @@ console = Console()
 
 
 def main():
-    console.print("[bold blue]🤖 Kibo AI - Memory Enhanced Chat Agent[/bold blue]")
+    console.print("[bold blue]Kibo AI - Memory Enhanced Chat Agent[/bold blue]")
     console.print("[dim]Powered by Kibo Core, Agno, and Mem0[/dim]\n")
 
     # 1. Initialize Memory
@@ -23,9 +23,9 @@ def main():
         memory = KiboMemory()
         # Test connection (will throw if DB not running)
         memory.search("health check", user_id="system")
-        console.print("[green]✅ Memory Layer (Mem0 + ChromaDB) connected.[/green]")
+        console.print("[green]Memory Layer (Mem0 + ChromaDB) connected.[/green]")
     except Exception as e:
-        console.print("[bold red]❌ Failed to connect to Memory Layer.[/bold red]")
+        console.print("[bold red]Failed to connect to Memory Layer.[/bold red]")
         console.print(f"Error: {e}")
         console.print(
             "\n[yellow]Tip: Please run 'kibo start db' in a separate terminal.[/yellow]"
@@ -33,7 +33,7 @@ def main():
         return
 
     # 2. Configure Agent
-    console.print("[yellow]🔄 Initializing Agent...[/yellow]")
+    console.print("[yellow]Initializing Agent...[/yellow]")
 
     # We use Agno as the engine
     blueprint = AgentConfig(
@@ -53,14 +53,12 @@ def main():
 
     try:
         agent = KiboAgent(config=blueprint)
-        console.print("[green]✅ Agent initialized.[/green]\n")
+        console.print("[green]Agent initialized.[/green]\n")
     except Exception as e:
-        console.print(f"[bold red]❌ Failed to initialize Agent: {e}[/bold red]")
+        console.print(f"[bold red]Failed to initialize Agent: {e}[/bold red]")
         return
 
-    console.print(
-        "[bold]💬 Chat Session Started (type 'exit' or 'quit' to stop)[/bold]"
-    )
+    console.print("[bold]Chat Session Started (type 'exit' or 'quit' to stop)[/bold]")
     console.print("-" * 50)
 
     user_id = "console_user"
@@ -72,7 +70,7 @@ def main():
             break
 
         if user_input.lower() in ["exit", "quit"]:
-            console.print("[blue]Goodbye! 👋[/blue]")
+            console.print("[blue]Goodbye![/blue]")
             break
 
         if not user_input:
@@ -94,7 +92,7 @@ def main():
         context_str = ""
         if related_memories:
             console.print(
-                f"[dim]🧠 Recall: Found {len(related_memories)} relevant memories.[/dim]"
+                f"[dim]Recall: Found {len(related_memories)} relevant memories.[/dim]"
             )
             context_str = "\n".join(f"- {m}" for m in related_memories)
 
@@ -135,7 +133,7 @@ def main():
                 ],
                 user_id=user_id,
             )
-            # console.print("[dim]💾 Interaction saved to memory.[/dim]")
+            # console.print("[dim]Interaction saved to memory.[/dim]")
         except Exception as e:
             console.print(f"[red]Warning: Failed to save memory: {e}[/red]")
 

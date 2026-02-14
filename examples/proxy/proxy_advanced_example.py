@@ -26,9 +26,9 @@ def run_agent_with_budget():
 
         agent = KiboAgent(agent_config)
         result = agent.run("Do your job.")
-        print(f"\n🤖 Agent Reply: {result.output_data}")
+        print(f"\nAgent Reply: {result.output_data}")
 
-        print("\n💰 Request Cost Analysis (Stateless):")
+        print("\nRequest Cost Analysis (Stateless):")
         meta = result.metadata
         usage = meta.get("token_usage", {})
         print(f"   -> Model: {meta.get('model')}")

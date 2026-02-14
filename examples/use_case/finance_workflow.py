@@ -145,7 +145,7 @@ async def main():
 
     print("\n=== FINAL STRATEGY ===")
     print(final.output_data)
-    print(f"\n💵 Total Cost: ${total_cost:.6f}")
+    print(f"\nTotal Cost: ${total_cost:.6f}")
 
 
 if __name__ == "__main__":

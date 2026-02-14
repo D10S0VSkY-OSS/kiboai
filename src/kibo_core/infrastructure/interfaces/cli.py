@@ -131,7 +131,7 @@ def main():
             sys.exit(e.returncode)
 
     elif command == "start-all":
-        print("🚀 Launching Kibo AI Platform...")
+        print("Launching Kibo AI Platform...")
 
         # Self-reference command
         kibo_cmd = [sys.executable, "-m", "kibo_core.cli"]
@@ -148,9 +148,9 @@ def main():
 
         try:
             subprocess.run(proxy_cmd, check=True)
-            print("✅ Gateway started.")
+            print("Gateway started.")
         except subprocess.CalledProcessError:
-            print("❌ Failed to start Gateway.")
+            print("Failed to start Gateway.")
             sys.exit(1)
 
         # 2. Start Head Node

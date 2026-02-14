@@ -28,9 +28,16 @@ def _create_crewai_agent(bp: AgentConfig, api_key: str):
     from crewai import Agent, Task, Crew, Process
     from kibo_core.infrastructure.adapters.crewai_adapter import CrewAIAdapter
 
-    base_url, final_key = _resolve_llm_params(bp, api_key)
-
-    llm = LLM(model=bp.model, api_key=final_key, base_url=base_url)
+    # 1. Native Object Mode: Pass-through if model is not a string
+    if not isinstance(bp.model, str):
+        llm = bp.model
+    else:
+        # 2. String Mode: Proxy or LiteLLM
+        base_url, final_key = _resolve_llm_params(bp, api_key)
+        # CrewAI already integrates LiteLLM fundamentally.
+        # If base_url is set (Proxy), using LiteLLM via OpenAI-compat behavior.
+        # If not set, strictly relying on CrewAI's internal LiteLLM resolution.
+        llm = LLM(model=bp.model, api_key=final_key, base_url=base_url)
 
     # Extract known keys, pass everything else to Agent(**kwargs)
     agent_config = bp.config.copy()
@@ -75,10 +82,22 @@ def _create_agno_agent(bp: AgentConfig, api_key: str):
     from agno.agent import Agent
     from kibo_core.infrastructure.adapters.agno_adapter import AgnoAdapter
     from agno.models.openai import OpenAIChat
+    from agno.models.litellm import LiteLLM
 
-    base_url, final_key = _resolve_llm_params(bp, api_key)
+    # 1. Native Object Mode: Pass-through if model is not a string
+    if not isinstance(bp.model, str):
+        model = bp.model
+    else:
+        # 2. String Mode: Decide between Proxy/OpenAI-Compat vs Universal LiteLLM Lib
+        base_url, final_key = _resolve_llm_params(bp, api_key)
 
-    model = OpenAIChat(id=bp.model, base_url=base_url, api_key=final_key)
+        if base_url:
+            # If a Base URL is defined (e.g. Kibo Proxy or Custom Endpoint), use OpenAIChat connector
+            model = OpenAIChat(id=bp.model, base_url=base_url, api_key=final_key)
+        else:
+            # If no Base URL, use LiteLLM Library adapter for universal provider support (Gemini, Anthropic, etc.)
+            # This allows "gemini/gemini-pro" to work without a Proxy server running.
+            model = LiteLLM(id=bp.model)
 
     agent_config = bp.config.copy()
 
@@ -110,26 +129,41 @@ def _create_agno_agent(bp: AgentConfig, api_key: str):
 
 
 def _create_pydantic_agent(bp: AgentConfig, api_key: str):
-    import os
-    import inspect
     from pydantic_ai import Agent, RunContext
     from pydantic_ai.models.openai import OpenAIModel
     from pydantic_ai.providers.openai import OpenAIProvider
     from kibo_core.infrastructure.adapters.pydantic_ai_adapter import PydanticAIAdapter
     from kibo_core.shared_kernel.logging import logger
 
-    base_url, final_key = _resolve_llm_params(bp, api_key)
+    # 1. Native Object Mode: Pass-through if model is not a string
+    if not isinstance(bp.model, str):
+        model = bp.model
+    else:
+        # 2. String Mode: Proxy or Known Providers
+        base_url, final_key = _resolve_llm_params(bp, api_key)
 
-    model_arg = bp.model
+        model_arg = bp.model
+        if "openai:" in model_arg and base_url:
+            # Force proxy usage for OpenAI-like models if enabled
+            model_arg = model_arg.replace("openai:", "")
+            provider = OpenAIProvider(base_url=base_url, api_key=final_key)
+            model = OpenAIModel(model_arg, provider=provider)
+        elif base_url:
+            # If Proxy is active, force OpenAI protocol regardless of prefix
+            provider = OpenAIProvider(base_url=base_url, api_key=final_key)
+            model = OpenAIModel(model_arg, provider=provider)
+        else:
+            # 3. Universal Mode (No Proxy): PydanticAI resolves string automatically (OpenAI, Gemini, etc)
+            # We pass the string directly to Agent, which resolves it.
+            # However, logic below expects 'model' object.
+            # We can let PydanticAI resolve the string if we pass it as string.
+            # But we need to handle the case where it's passed to Agent constructor.
+            # Current Implementation assumed 'model' var is an automated object.
+            # Let's stringify it if we can.
+            model = model_arg
 
+    # Define system prompt from blueprint
     sys_prompt = f"{bp.description}\n\n{bp.instructions}"
-
-    provider = OpenAIProvider(base_url=base_url, api_key=final_key)
-
-    if "openai:" in model_arg:
-        model_arg = model_arg.replace("openai:", "")
-
-    model = OpenAIModel(model_arg, provider=provider)
 
     agent_config = bp.config.copy()
     agent_config.pop("base_url", None)
@@ -188,9 +222,26 @@ def _create_langchain_agent(bp: AgentConfig, api_key: str):
     from kibo_core.infrastructure.adapters.langchain_adapter import LangChainAdapter
     from langchain_openai import ChatOpenAI
 
-    base_url, final_key = _resolve_llm_params(bp, api_key)
+    # 1. Native Object Mode: Pass-through if model is not a string
+    if not isinstance(bp.model, str):
+        llm = bp.model
+    else:
+        # 2. String Mode: Proxy or LiteLLM community
+        base_url, final_key = _resolve_llm_params(bp, api_key)
 
-    llm = ChatOpenAI(model=bp.model, api_key=final_key, base_url=base_url)
+        if base_url:
+            # Proxy Mode: Use ChatOpenAI pointing to Kibo Proxy
+            llm = ChatOpenAI(model=bp.model, api_key=final_key, base_url=base_url)
+        else:
+            # Universal Mode: Use ChatLiteLLM for broad support if available
+            try:
+                from langchain_community.chat_models import ChatLiteLLM
+
+                # ChatLiteLLM handles 'gemini/...' etc.
+                llm = ChatLiteLLM(model=bp.model)
+            except ImportError:
+                # Fallback to OpenAI if community package missing (unlikely but safe)
+                llm = ChatOpenAI(model=bp.model, api_key=final_key)
 
     tools = bp.config.get("tools", [])
     if tools:
@@ -246,9 +297,22 @@ def _create_langgraph_agent(bp: AgentConfig, api_key: str):
     from langchain_openai import ChatOpenAI
     import operator
 
-    base_url, final_key = _resolve_llm_params(bp, api_key)
+    # 1. Native Object Mode:
+    if not isinstance(bp.model, str):
+        llm = bp.model
+    else:
+        # 2. String Mode: Proxy or LiteLLM
+        base_url, final_key = _resolve_llm_params(bp, api_key)
 
-    llm = ChatOpenAI(model=bp.model, api_key=final_key, base_url=base_url)
+        if base_url:
+            llm = ChatOpenAI(model=bp.model, api_key=final_key, base_url=base_url)
+        else:
+            try:
+                from langchain_community.chat_models import ChatLiteLLM
+
+                llm = ChatLiteLLM(model=bp.model)
+            except ImportError:
+                llm = ChatOpenAI(model=bp.model, api_key=final_key)
 
     class State(TypedDict):
         messages: Annotated[list[BaseMessage], operator.add]

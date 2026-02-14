@@ -89,8 +89,24 @@ def main():
         print("\n--- Team Result ---")
         print(result.output_data)
 
-        # Verify usage metadata
-        print(f"\nMetadata: {result.metadata}")
+        print("\n--- Metadata Analysis ---")
+        meta = result.metadata
+        print(f"1. Adapter Source: {meta.get('adapter')} (Kibo Wrapper)")
+
+        usage = meta.get("usage")
+        print(f"2. Framework Object (Agno): {type(usage).__name__}")
+        print(f"   {usage}")
+
+        # Try to show raw-like values usually returned by LiteLLM/OpenAI
+        print("3. Underlying Data (Simulating LiteLLM Response):")
+        if usage:
+            # Agno Metrics object attributes
+            input_tok = getattr(usage, "input_tokens", 0)
+            output_tok = getattr(usage, "output_tokens", 0)
+            total_tok = getattr(usage, "total_tokens", 0)
+            print(
+                f"   {{'prompt_tokens': {input_tok}, 'completion_tokens': {output_tok}, 'total_tokens': {total_tok}}}"
+            )
 
     except Exception as e:
         print(f"Error: {e}")
