@@ -44,23 +44,36 @@ class KiboAgent:
         else:
             self.adapter = create_distributed_agent(config, api_key=api_key)
 
-    def run(self, input_data: Any, distributed: Optional[bool] = None) -> AgentResult:
+    def run(
+        self,
+        input_data: Any,
+        distributed: Optional[bool] = None,
+        params: Optional[dict] = None,
+    ) -> AgentResult:
         """
         Synchronous execution. Submits and waits for result.
         :param distributed: Override execution mode for this run.
+        :param params: Optional parameters for execution context (e.g. thread_id).
         """
-        future = self.run_async(input_data, distributed=distributed)
+        future = self.run_async(input_data, distributed=distributed, params=params)
         return future.result()
 
     def run_async(
-        self, input_data: Any, distributed: Optional[bool] = None
+        self,
+        input_data: Any,
+        distributed: Optional[bool] = None,
+        params: Optional[dict] = None,
     ) -> KiboFuture:
         """
         Asynchronous execution. Returns a KiboFuture.
         :param distributed: Override execution mode for this run.
+        :param params: Optional parameters for execution context.
         """
         future = self.service.submit_agent_task(
-            agent=self.adapter, input_data=input_data, distributed=distributed
+            agent=self.adapter,
+            input_data=input_data,
+            distributed=distributed,
+            params=params,
         )
         return KiboFuture(future)
 

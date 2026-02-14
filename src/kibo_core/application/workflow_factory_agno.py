@@ -37,9 +37,7 @@ def _compile_workflow_to_agno(config: WorkflowConfig, api_key: str) -> BaseAgent
     # 2. Create the Team/Manager Agent
 
     # Determine model for manager
-    manager_model_id = "gpt-4o"  # Default strong model for coordination
-    if config.config.get("manager_model"):
-        manager_model_id = config.config.get("manager_model")
+    manager_model_id = config.config.get("manager_model", "gpt-4o")
 
     # Prepare native extensions but prioritize them over defaults if provided
     # Strategy: Merge native extensions with our defaults
@@ -59,22 +57,47 @@ def _compile_workflow_to_agno(config: WorkflowConfig, api_key: str) -> BaseAgent
     if "description" not in agent_kwargs:
         agent_kwargs["description"] = config.description
 
-    # Model is mandatory from Kibo logic unless user overrides?
-    if "model" not in agent_kwargs:
-        # Check for Kibo Proxy configuration (Environment)
-        base_url = None
-        proxy_url = os.getenv("KIBO_PROXY_URL")
+    # Model for Manager/Team Leader
+    # If user provided a model in native_extensions, use it.
+    # Checks if it is a string and needs wrapping (universal support)
+    if "model" in agent_kwargs:
+        model_val = agent_kwargs["model"]
+        if isinstance(model_val, str):
+            # Check if it's already in Agno format (provider:model) or LiteLLM format
+            # If it has '/', it's likely LiteLLM format. Agno uses ':'
+            # We wrap it in LiteLLM adapter to be safe and support universal providers
+            from agno.models.litellm import LiteLLM
 
-        # Logic to handle Proxy URL and API Key for Agno
+            # Pass api_key explicitly if available, otherwise LiteLLM might fallback to env
+            # Note: api_key passed to factory might be OpenAI key or other.
+            # If using native gemini string, we hope LiteLLM finds the key in env or we use the passed one.
+            # But passed api_key might be inconsistent if manager uses differnt provider than agent.
+            # However, for now, let's try to pass it if it seems relevant.
+            agent_kwargs["model"] = LiteLLM(id=model_val, api_key=api_key)
+
+    # Otherwise, resolve it using Kibo logic (String -> Proxy or LiteLLM Lib)
+    elif "model" not in agent_kwargs:
+        from agno.models.openai import OpenAIChat
+        from agno.models.litellm import LiteLLM
+
+        # Check for Kibo Proxy configuration (Environment)
+        proxy_url = os.getenv("KIBO_PROXY_URL")
         final_api_key = api_key
+
         if proxy_url:
             base_url = proxy_url
             if not final_api_key:
-                final_api_key = "sk-kibo-proxy"  # Dummy key for LiteLLM proxy
+                final_api_key = "sk-kibo-proxy"
 
-        agent_kwargs["model"] = OpenAIChat(
-            id=manager_model_id, api_key=final_api_key, base_url=base_url
-        )
+            # Proxy Mode
+            agent_kwargs["model"] = OpenAIChat(
+                id=manager_model_id, api_key=final_api_key, base_url=base_url
+            )
+        else:
+            # Universal Mode (LiteLLM Lib) or Native string resolution if supported
+            # Here we wrap the string ID in a generic LiteLLM adapter which handles providers
+            # e.g. "gemini/gemini-pro" -> LiteLLM(id="gemini/gemini-pro")
+            agent_kwargs["model"] = LiteLLM(id=manager_model_id)
 
     if "markdown" not in agent_kwargs:
         agent_kwargs["markdown"] = True

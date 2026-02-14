@@ -79,7 +79,7 @@ def main():
         adapter=adapter,
     )
 
-    print("Running Agno Team...")
+    print("Running Agno Workflow...")
     try:
         # Agno usually takes a string prompt
         input_data = "What is 2+2?"

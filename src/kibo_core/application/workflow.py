@@ -81,7 +81,7 @@ class DistributedWorkflowService:
         if params is None:
             params = {}
 
-        executor, _ = self._GetExecutor(distributed)
+        executor, is_distributed = self._GetExecutor(distributed)
 
         context = AgentContext(workflow_id=uuid4(), step_id=uuid4(), params=params)
         request = AgentRequest(input_data=input_data, context=context)

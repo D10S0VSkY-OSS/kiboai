@@ -71,9 +71,16 @@ def _compile_workflow_to_crewai(
         from crewai import Agent as CrewAgent
         from crewai.llm import LLM
 
-        # Use factory logic roughly
-        base_url, final_key = _resolve_llm_params(step_agent_config, api_key)
-        llm = LLM(model=step_agent_config.model, api_key=final_key, base_url=base_url)
+        # 1. Native Object Mode: Pass-through if model is not a string
+        if not isinstance(step_agent_config.model, str):
+            llm = step_agent_config.model
+        else:
+            # 2. String Mode: Proxy or LiteLLM
+            base_url, final_key = _resolve_llm_params(step_agent_config, api_key)
+            llm = LLM(
+                model=step_agent_config.model, api_key=final_key, base_url=base_url
+            )
+
         c_agent = CrewAgent(
             role=step_agent_config.name,
             goal=step_agent_config.instructions,

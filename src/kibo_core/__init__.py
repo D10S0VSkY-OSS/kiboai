@@ -1,4 +1,12 @@
 # Monkeypatch for LiteLLM bug on Python 3.13 (AttributeError: __annotations__)
+import os
+
+# Disable Agno/PhiData telemetry by default unless explicitly enabled by user
+if "AGNO_TELEMETRY" not in os.environ:
+    os.environ["AGNO_TELEMETRY"] = "false"
+if "PHI_TELEMETRY" not in os.environ:
+    os.environ["PHI_TELEMETRY"] = "false"
+
 try:
     import litellm.litellm_core_utils.model_param_helper
 

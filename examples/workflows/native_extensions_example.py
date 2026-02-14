@@ -92,9 +92,11 @@ def main():
     )
 
     try:
-        # Simple run
+        # Simple run with Checkpointer config passed as params
+        # Kibo now supports passing execution params which are forwarded as config to LangGraph
         result = kibo_agent.run(
-            {"messages": [HumanMessage(content="Persistence test")]}
+            {"messages": [HumanMessage(content="Persistence test")]},
+            params={"configurable": {"thread_id": "1"}},
         )
         print(result.output_data)
 
