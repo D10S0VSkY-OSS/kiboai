@@ -41,4 +41,5 @@ packages = ["src/kibo_core"]
 [dependency-groups]
 dev = [
     "black>=26.1.0",
+    "detect-secrets>=1.5.0",
 ]
