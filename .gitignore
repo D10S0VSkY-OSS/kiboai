@@ -205,3 +205,12 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# Kibo AI Runtime & Local Data
+chroma_db/
+kibo_chroma_db/
+site/
+*.db
+models.json
+agno_output.txt
+debug_*.py

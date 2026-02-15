@@ -26,7 +26,10 @@ class AgentConfig(BaseModel):
         "crewai",
         description="The underlying engine to use: 'crewai', 'agno', 'langchain', 'pydantic_ai'",
     )
-    model: str = Field("gpt-4o-mini", description="The LLM model ID to use.")
+    model: Any = Field(
+        "gpt-4o-mini",
+        description="The LLM model ID (string) or a framework-specific model object.",
+    )
 
     config: Dict[str, Any] = Field(
         default_factory=dict, description="Engine-specific configuration."

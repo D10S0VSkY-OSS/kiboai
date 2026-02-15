@@ -23,10 +23,13 @@ dependencies = [
     "mkdocs>=1.6.1",
     "mkdocs-material>=9.7.1",
     "yfinance>=1.1.0",
+    "mem0ai>=1.0.3",
+    "chromadb>=1.1.1",
+    "langchain-google-genai>=2.1.12",
 ]
 
 [project.scripts]
-kibo = "kibo_core.cli:main"
+kibo = "kibo_core.infrastructure.interfaces.cli:main"
 
 [build-system]
 requires = ["hatchling"]
@@ -38,4 +41,5 @@ packages = ["src/kibo_core"]
 [dependency-groups]
 dev = [
     "black>=26.1.0",
+    "detect-secrets>=1.5.0",
 ]

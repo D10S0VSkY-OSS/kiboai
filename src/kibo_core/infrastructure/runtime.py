@@ -1,6 +1,6 @@
 import ray
 import logging
-from kibo_core.utils.logging import silence_ray_logs
+from kibo_core.shared_kernel.logging import silence_ray_logs
 
 _DISTRIBUTED_MODE = False
 

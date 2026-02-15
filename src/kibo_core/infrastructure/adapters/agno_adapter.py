@@ -12,8 +12,10 @@ class AgnoAdapter(IAgentNode):
         self.agent = agent
 
     def execute(self, request: AgentRequest) -> AgentResult:
+        print("[AgnoAdapter] Starting execution...")
         input_text = str(request.input_data)
-        response = self.agent.run(input_text)
+        response = self.agent.run(input_text, stream=False)
+        print("[AgnoAdapter] Execution finished.")
 
         content = response.content if hasattr(response, "content") else str(response)
 
