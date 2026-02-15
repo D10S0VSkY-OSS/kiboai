@@ -143,7 +143,7 @@ def _create_pydantic_agent(bp: AgentConfig, api_key: str):
         base_url, final_key = _resolve_llm_params(bp, api_key)
 
         model_arg = bp.model
-        if "openai:" in model_arg and base_url:
+        if model_arg.startswith("openai:") and base_url:
             # Force proxy usage for OpenAI-like models if enabled
             model_arg = model_arg.replace("openai:", "")
             provider = OpenAIProvider(base_url=base_url, api_key=final_key)
@@ -241,6 +241,15 @@ def _create_langchain_agent(bp: AgentConfig, api_key: str):
                 llm = ChatLiteLLM(model=bp.model)
             except ImportError:
                 # Fallback to OpenAI if community package missing (unlikely but safe)
+                if not final_key:
+                    error_msg = (
+                        f"❌ Configuration Error: Cannot instantiate ChatOpenAI for model '{bp.model}' because "
+                        "the 'final_key' (API Key) is missing. Please ensure langchain-community is installed "
+                        "for broad model support, or provide a valid API key for direct OpenAI usage."
+                    )
+                    print(error_msg)
+                    raise ValueError(error_msg)
+
                 llm = ChatOpenAI(model=bp.model, api_key=final_key)
 
     tools = bp.config.get("tools", [])
@@ -312,6 +321,12 @@ def _create_langgraph_agent(bp: AgentConfig, api_key: str):
 
                 llm = ChatLiteLLM(model=bp.model)
             except ImportError:
+                if not final_key:
+                    raise ValueError(
+                        f"❌ Configuration Error: Cannot instantiate ChatOpenAI for model '{bp.model}' because "
+                        "the 'final_key' (API Key) is missing. Please ensure langchain-community is installed "
+                        "for broad model support, or provide a valid API key for direct OpenAI usage."
+                    )
                 llm = ChatOpenAI(model=bp.model, api_key=final_key)
 
     class State(TypedDict):

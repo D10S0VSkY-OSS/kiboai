@@ -55,9 +55,9 @@ def handle_memory(args):
 
 
 def handle_serve(args):
-    from kibo_core.infrastructure.server.app import start_agent_server
-
     try:
+        from kibo_core.infrastructure.server.app import start_agent_server
+
         start_agent_server(args.file, args.host, args.port, args.name)
     except ImportError:
         print(
@@ -168,6 +168,39 @@ def handle_start_all(args):
     try:
         subprocess.run(node_cmd, check=True)
     except subprocess.CalledProcessError as e:
+        print("❌ Failed to start Head Node. Stopping Gateway...")
+        try:
+            import signal
+            import psutil
+            import time
+
+            if os.path.exists("gateway.pid"):
+                with open("gateway.pid", "r") as pid_file:
+                    content = pid_file.read().strip()
+
+                if content:
+                    pid = int(content)
+                    try:
+                        proc = psutil.Process(pid)
+                        proc.terminate()
+                        try:
+                            proc.wait(timeout=3)
+                        except psutil.TimeoutExpired:
+                            proc.kill()
+                        print("✅ Gateway stopped.")
+                    except (psutil.NoSuchProcess, ProcessLookupError):
+                        pass
+                    except (psutil.AccessDenied, PermissionError):
+                        print("❌ Permission denied when stopping gateway.")
+
+                try:
+                    os.remove("gateway.pid")
+                except OSError:
+                    pass
+
+        except Exception as cleanup_error:
+            print(f"⚠️ Error cleaning up gateway: {cleanup_error}")
+
         sys.exit(e.returncode)
 
 
@@ -222,7 +255,9 @@ def handle_proxy(args, unknown_args):
         if run_background:
             try:
                 with open("gateway.log", "a") as outfile:
-                    subprocess.Popen(cmd, stdout=outfile, stderr=outfile)
+                    proc = subprocess.Popen(cmd, stdout=outfile, stderr=outfile)
+                    with open("gateway.pid", "w") as pid_file:
+                        pid_file.write(str(proc.pid))
                 print("  ✅ Gateway started in background.")
                 print("  📝 Logs: gateway.log")
                 print("  ℹ️  To stop: kibo proxy stop")
@@ -241,8 +276,28 @@ def handle_proxy(args, unknown_args):
     elif args.proxy_action == "stop":
         print("🛑 Stopping Kibo Gateway...")
         try:
-            subprocess.run(["pkill", "-f", "litellm"], check=False)
+            import signal
+            import psutil
+
+            with open("gateway.pid", "r") as pid_file:
+                pid = int(pid_file.read().strip())
+
+            try:
+                if os.name == "posix":
+                    os.kill(pid, signal.SIGTERM)
+                else:
+                    psutil.Process(pid).terminate()
+            except (ProcessLookupError, psutil.NoSuchProcess):
+                print("⚠️ Process already stopped.")
+            except (PermissionError, psutil.AccessDenied):
+                print("❌ Permission denied when stopping process.")
+                return
+
+            os.remove("gateway.pid")
             print("✅ Gateway stopped.")
+
+        except FileNotFoundError:
+            print("⚠️ Gateway PID file not found. Is the gateway running?")
         except Exception as e:
             print(f"❌ Error stopping gateway: {e}")
 

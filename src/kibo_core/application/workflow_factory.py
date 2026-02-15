@@ -1,8 +1,10 @@
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
+import uuid
 from kibo_core.domain.workflow_definitions import WorkflowConfig, WorkflowStep
 from kibo_core.domain.blueprint import AgentConfig
 from kibo_core.application.factory import agent_factory, _resolve_llm_params
 from kibo_core.infrastructure.adapters.base import BaseAgentAdapter
+from kibo_core.domain.entities import AgentRequest, AgentContext
 
 
 def _compile_workflow_to_crewai(
@@ -57,13 +59,7 @@ def _compile_workflow_to_crewai(
         # The factory returns an Adapter. We need to peek inside or
         # refactor factory to return raw agent.
         # For now, let's use the factory's internal helper if possible or
-        # assume the adapter exposes the agent.
-
-        # HACK: Create the adapter and extract the underlying agent
-        # Ideally factory should be split into create_agent_adapter and create_agent_instance
-        adapter = agent_factory(step_agent_config, api_key)
-
-        # CrewAIAdapter stores it in self.crew usually, but here we are creating a single agent
+        # Re-implementing simplified agent creation to avoid wrapping in a Crew
         # Wait, agent_factory for crewai returns a CrewAIAdapter which wraps a Crew.
         # We need an Agent, not a Crew.
 
@@ -166,8 +162,6 @@ def _compile_workflow_to_langgraph(
                 # Execute Kibo Agent
                 # We need to construct a Request-like object object
                 # but adapters expect AgentRequest.
-                from kibo_core.domain.entities import AgentRequest, AgentContext
-                import uuid
 
                 req = AgentRequest(
                     input_data=combined_input,
@@ -229,7 +223,9 @@ def _compile_workflow_to_langgraph(
 from kibo_core.application.workflow_factory_agno import _compile_workflow_to_agno
 
 
-def workflow_factory(config: WorkflowConfig, api_key: str = None) -> BaseAgentAdapter:
+def workflow_factory(
+    config: WorkflowConfig, api_key: Optional[str] = None
+) -> BaseAgentAdapter:
     """
     Directly returns an Adapter (like LangGraphAdapter or CrewAIAdapter)
     that wraps the compiled workflow.

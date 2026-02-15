@@ -2,15 +2,24 @@ from typing import Any, Dict, List, Optional
 from mem0 import Memory
 from mem0.configs.base import MemoryConfig, VectorStoreConfig, LlmConfig, EmbedderConfig
 import os
+import threading
 
 
 class KiboMemory:
     _instance = None
+    _lock = threading.Lock()
 
     def __new__(cls):
         if cls._instance is None:
-            cls._instance = super(KiboMemory, cls).__new__(cls)
-            cls._instance.initialize()
+            with cls._lock:
+                if cls._instance is None:
+                    instance = super(KiboMemory, cls).__new__(cls)
+                    try:
+                        instance.initialize()
+                        cls._instance = instance
+                    except Exception:
+                        # Initialization failed; do not store the broken instance.
+                        raise
         return cls._instance
 
     def initialize(self):
@@ -74,6 +83,7 @@ class KiboMemory:
         except Exception as e:
             print(f"Critical Error initializing KiboMemory: {e}")
             self.memory = None
+            raise e
 
     def add(self, messages, user_id, **kwargs):
         if self.memory:

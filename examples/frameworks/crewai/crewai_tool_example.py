@@ -2,7 +2,7 @@ import os
 import sys
 
 # Ensure Kibo is in path for imports
-sys.path.append(os.path.join(os.path.dirname(__file__), "..", "src"))
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "src"))
 
 from kibo_core import AgentConfig, create_agent
 from crewai.tools import BaseTool

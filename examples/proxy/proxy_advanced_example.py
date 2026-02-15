@@ -1,7 +1,4 @@
 import os
-import json
-import time
-import requests
 from kibo_core import KiboAgent, AgentConfig
 
 VIRTUAL_KEY = "sk-any-random-key"
@@ -34,9 +31,9 @@ def run_agent_with_budget():
         print(f"   -> Model: {meta.get('model')}")
         print(f"   -> Usage: {usage}")
 
-        if hasattr(usage, "prompt_tokens") and hasattr(usage, "completion_tokens"):
+        if "prompt_tokens" in usage and "completion_tokens" in usage:
             cost = (
-                usage.prompt_tokens * 0.15 + usage.completion_tokens * 0.60
+                usage["prompt_tokens"] * 0.15 + usage["completion_tokens"] * 0.60
             ) / 1_000_000
             print(f"   -> Approx Cost: ${cost:.6f}")
 
@@ -46,8 +43,4 @@ def run_agent_with_budget():
 
 
 if __name__ == "__main__":
-
-    if not os.environ.get("OPENAI_API_KEY"):
-        pass
-
     run_agent_with_budget()
