@@ -132,6 +132,34 @@ def _create_pydantic_agent(bp: AgentConfig, api_key: str):
         else:
             model = model_arg
 
+    # 1. Native Object Mode: Pass-through if model is not a string
+    if not isinstance(bp.model, str):
+        model = bp.model
+    else:
+        # 2. String Mode: Proxy or Known Providers
+        base_url, final_key = _resolve_llm_params(bp, api_key)
+
+        model_arg = bp.model
+        if model_arg.startswith("openai:") and base_url:
+            # Force proxy usage for OpenAI-like models if enabled
+            model_arg = model_arg.replace("openai:", "")
+            provider = OpenAIProvider(base_url=base_url, api_key=final_key)
+            model = OpenAIModel(model_arg, provider=provider)
+        elif base_url:
+            # If Proxy is active, force OpenAI protocol regardless of prefix
+            provider = OpenAIProvider(base_url=base_url, api_key=final_key)
+            model = OpenAIModel(model_arg, provider=provider)
+        else:
+            # 3. Universal Mode (No Proxy): PydanticAI resolves string automatically (OpenAI, Gemini, etc)
+            # We pass the string directly to Agent, which resolves it.
+            # However, logic below expects 'model' object.
+            # We can let PydanticAI resolve the string if we pass it as string.
+            # But we need to handle the case where it's passed to Agent constructor.
+            # Current Implementation assumed 'model' var is an automated object.
+            # Let's stringify it if we can.
+            model = model_arg
+
+    # Define system prompt from blueprint
     sys_prompt = f"{bp.description}\n\n{bp.instructions}"
 
     agent_config = bp.config.copy()
