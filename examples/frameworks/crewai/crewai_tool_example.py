@@ -1,16 +1,11 @@
 import os
 import sys
 
-# Ensure Kibo is in path for imports
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "src"))
 
 from kibo_core import AgentConfig, create_agent
 from crewai.tools import BaseTool
 from pydantic import BaseModel, Field
-
-# --- Define a Native CrewAI Tool ---
-# Since crewai-tools package might be unstable, we define a custom BaseTool
-# consistent with CrewAI's best practices.
 
 
 class CalculatorInput(BaseModel):
@@ -26,20 +21,17 @@ class CalculatorTool(BaseTool):
 
     def _run(self, expression: str) -> str:
         try:
-            # Dangerous in prod, safe for local example
             return str(eval(expression))
         except Exception as e:
             return f"Error: {e}"
 
 
-# Instantiate tool
 calc_tool = CalculatorTool()
 
 
 def main():
     print("--- CrewAI Agent with Native Tool (Custom Calculator) ---")
 
-    # Configure Agent
     config = AgentConfig(
         name="MathProfessor",
         description="A professor who excels at math.",
@@ -48,7 +40,6 @@ def main():
         config={"verbose": True, "tools": [calc_tool]},  # Pass CrewAI BaseTool directly
     )
 
-    # Create & Run
     agent = create_agent(config, api_key="sk-dummy")
 
     try:

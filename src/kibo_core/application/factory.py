@@ -28,30 +28,21 @@ def _create_crewai_agent(bp: AgentConfig, api_key: str):
     from crewai import Agent, Task, Crew, Process
     from kibo_core.infrastructure.adapters.crewai_adapter import CrewAIAdapter
 
-    # 1. Native Object Mode: Pass-through if model is not a string
     if not isinstance(bp.model, str):
         llm = bp.model
     else:
-        # 2. String Mode: Proxy or LiteLLM
         base_url, final_key = _resolve_llm_params(bp, api_key)
-        # CrewAI already integrates LiteLLM fundamentally.
-        # If base_url is set (Proxy), using LiteLLM via OpenAI-compat behavior.
-        # If not set, strictly relying on CrewAI's internal LiteLLM resolution.
         llm = LLM(model=bp.model, api_key=final_key, base_url=base_url)
 
-    # Extract known keys, pass everything else to Agent(**kwargs)
     agent_config = bp.config.copy()
 
-    # Handle specific keys that might need special treatment or defaults if not present
     verbose = agent_config.pop("verbose", True)
     allow_delegation = agent_config.pop("allow_delegation", False)
     tools = agent_config.pop("tools", [])
 
-    # Remove keys that shouldn't be passed to Agent constructor
     agent_config.pop("base_url", None)
     agent_config.pop("api_key", None)
 
-    # Convert generic KiboTools to CrewAI-compatible tools
     final_tools = convert_tools(tools, "crewai")
 
     researcher = Agent(
@@ -84,36 +75,26 @@ def _create_agno_agent(bp: AgentConfig, api_key: str):
     from agno.models.openai import OpenAIChat
     from agno.models.litellm import LiteLLM
 
-    # 1. Native Object Mode: Pass-through if model is not a string
     if not isinstance(bp.model, str):
         model = bp.model
     else:
-        # 2. String Mode: Decide between Proxy/OpenAI-Compat vs Universal LiteLLM Lib
         base_url, final_key = _resolve_llm_params(bp, api_key)
 
         if base_url:
-            # If a Base URL is defined (e.g. Kibo Proxy or Custom Endpoint), use OpenAIChat connector
             model = OpenAIChat(id=bp.model, base_url=base_url, api_key=final_key)
         else:
-            # If no Base URL, use LiteLLM Library adapter for universal provider support (Gemini, Anthropic, etc.)
-            # This allows "gemini/gemini-pro" to work without a Proxy server running.
             model = LiteLLM(id=bp.model)
 
     agent_config = bp.config.copy()
 
-    # Extract keys we handle explicitly
     markdown = agent_config.pop("markdown", True)
     tools = agent_config.pop("tools", [])
 
-    # Remove keys that shouldn't be passed to Agent constructor
     agent_config.pop("base_url", None)
     agent_config.pop("api_key", None)
 
-    # Remove 'temperature' if present in config but not supported by Agno agent constructor
-    # (Agno usually takes temperature in the Model, not the Agent)
     agent_config.pop("temperature", None)
 
-    # Convert generic KiboTools to Agno-compatible tools
     final_tools = convert_tools(tools, "agno")
 
     agent = Agent(
@@ -134,6 +115,22 @@ def _create_pydantic_agent(bp: AgentConfig, api_key: str):
     from pydantic_ai.providers.openai import OpenAIProvider
     from kibo_core.infrastructure.adapters.pydantic_ai_adapter import PydanticAIAdapter
     from kibo_core.shared_kernel.logging import logger
+
+    if not isinstance(bp.model, str):
+        model = bp.model
+    else:
+        base_url, final_key = _resolve_llm_params(bp, api_key)
+
+        model_arg = bp.model
+        if model_arg.startswith("openai:") and base_url:
+            model_arg = model_arg.replace("openai:", "")
+            provider = OpenAIProvider(base_url=base_url, api_key=final_key)
+            model = OpenAIModel(model_arg, provider=provider)
+        elif base_url:
+            provider = OpenAIProvider(base_url=base_url, api_key=final_key)
+            model = OpenAIModel(model_arg, provider=provider)
+        else:
+            model = model_arg
 
     # 1. Native Object Mode: Pass-through if model is not a string
     if not isinstance(bp.model, str):
@@ -170,12 +167,6 @@ def _create_pydantic_agent(bp: AgentConfig, api_key: str):
     agent_config.pop("api_key", None)
     tools = agent_config.pop("tools", [])
 
-    # Convert generic KiboTools to PydanticAI-compatible tools
-    # PydanticAI agents accept tools during instantiation (or via decorator) but
-    # the Agent constructor args vary.
-    # For now, we assume we pass them as a list if supported or iterate.
-    # Actually, PydanticAI Agent(..., tools=[...]) works for function tools.
-
     final_tools = convert_tools(tools, "pydantic_ai")
 
     agent = Agent(
@@ -183,23 +174,16 @@ def _create_pydantic_agent(bp: AgentConfig, api_key: str):
         system_prompt=sys_prompt,
     )
 
-    # Register tools manually if not accepted in constructor kwargs for this specific version
     import inspect
     from pydantic_ai import RunContext
 
     for t in final_tools:
-        # Check if the function expects RunContext first
         sig = inspect.signature(t)
         params = list(sig.parameters.values())
         is_context_aware = False
         if params:
-            # Check if the first parameter is type hinted with RunContext
-            # This is a basic check; PydanticAI does deeper inspection but this helps
-            # differentiate between tool and tool_plain
             first_param = params[0]
             if first_param.annotation != inspect.Parameter.empty:
-                # Check if it's RunContext type
-                # We can check string representation to be safe against imports
                 logger.info(
                     f"Checking tool {t.__name__} param {first_param.name} type: {first_param.annotation}"
                 )
@@ -209,7 +193,6 @@ def _create_pydantic_agent(bp: AgentConfig, api_key: str):
         if is_context_aware:
             agent.tool(t)
         else:
-            # If not context aware, register as plain tool
             agent.tool_plain(t)
 
     return PydanticAIAdapter(agent)
@@ -222,25 +205,19 @@ def _create_langchain_agent(bp: AgentConfig, api_key: str):
     from kibo_core.infrastructure.adapters.langchain_adapter import LangChainAdapter
     from langchain_openai import ChatOpenAI
 
-    # 1. Native Object Mode: Pass-through if model is not a string
     if not isinstance(bp.model, str):
         llm = bp.model
     else:
-        # 2. String Mode: Proxy or LiteLLM community
         base_url, final_key = _resolve_llm_params(bp, api_key)
 
         if base_url:
-            # Proxy Mode: Use ChatOpenAI pointing to Kibo Proxy
             llm = ChatOpenAI(model=bp.model, api_key=final_key, base_url=base_url)
         else:
-            # Universal Mode: Use ChatLiteLLM for broad support if available
             try:
                 from langchain_community.chat_models import ChatLiteLLM
 
-                # ChatLiteLLM handles 'gemini/...' etc.
                 llm = ChatLiteLLM(model=bp.model)
             except ImportError:
-                # Fallback to OpenAI if community package missing (unlikely but safe)
                 if not final_key:
                     error_msg = (
                         f"❌ Configuration Error: Cannot instantiate ChatOpenAI for model '{bp.model}' because "
@@ -254,7 +231,6 @@ def _create_langchain_agent(bp: AgentConfig, api_key: str):
 
     tools = bp.config.get("tools", [])
     if tools:
-        # Convert generic KiboTools to LangChain-compatible tools
         final_tools = convert_tools(tools, "langchain")
 
         from langchain.agents import AgentExecutor, create_tool_calling_agent
@@ -306,11 +282,9 @@ def _create_langgraph_agent(bp: AgentConfig, api_key: str):
     from langchain_openai import ChatOpenAI
     import operator
 
-    # 1. Native Object Mode:
     if not isinstance(bp.model, str):
         llm = bp.model
     else:
-        # 2. String Mode: Proxy or LiteLLM
         base_url, final_key = _resolve_llm_params(bp, api_key)
 
         if base_url:

@@ -93,16 +93,72 @@ uv run kibo start --head
 uv run kibo proxy start
 ```
 
-## 📂 Project Structure
+## � Examples Inventory
 
-*   **`src/kibo_core/`**: Core framework.
-    *   `infrastructure/adapters/`: Logic to wrap specific frameworks.
-    *   `infrastructure/executors/`: Ray and Local executors.
-*   **`examples/`**:
-    *   `agno_tool_example.py`: Using Agno tools (YFinance).
-    *   `langchain_tool_example.py`: Using Google Serper with LangChain.
-    *   `crewai_prebuilt_tool_example.py`: Using native tools with CrewAI.
-    *   `parallel_execution_example.py`: Distributed execution demo.
+Explore the `examples/` directory to see Kibo in action. Run any example using `uv run path/to/example.py`.
+
+### 🏗️ Frameworks
+Demonstrates how to use different underlying agent engines with Kibo's unified API.
+
+#### Agno (formerly PhiData)
+*   **Gemini Integration**: `examples/frameworks/agno/agno_native_gemini_example.py`
+*   **OpenAI Integration**: `examples/frameworks/agno/agno_openai_example.py`
+*   **Tool Usage**: `examples/frameworks/agno/agno_tool_example.py`
+
+#### CrewAI
+*   **Basic Agent**: `examples/frameworks/crewai/crewai_example.py`
+*   **Gemini Integration**: `examples/frameworks/crewai/crewai_native_gemini_example.py`
+*   **OpenAI Integration**: `examples/frameworks/crewai/crewai_openai_example.py`
+*   **Tool Usage**: `examples/frameworks/crewai/crewai_tool_example.py`
+
+#### LangChain
+*   **Basic Agent**: `examples/frameworks/langchain/langchain_example.py`
+*   **Gemini Integration**: `examples/frameworks/langchain/langchain_native_gemini_example.py`
+*   **OpenAI Integration**: `examples/frameworks/langchain/langchain_openai_example.py`
+*   **Tool Usage**: `examples/frameworks/langchain/langchain_tool_example.py`
+
+#### LangGraph
+*   **Gemini Integration**: `examples/frameworks/langgraph/langgraph_native_gemini_example.py`
+*   **OpenAI Integration**: `examples/frameworks/langgraph/langgraph_openai_example.py`
+
+#### PydanticAI
+*   **Gemini Integration**: `examples/frameworks/pydantic_ai/pydantic_ai_native_gemini_example.py`
+*   **OpenAI Integration**: `examples/frameworks/pydantic_ai/pydantic_ai_openai_example.py`
+*   **Tool Usage**: `examples/frameworks/pydantic_ai/pydantic_ai_tool_example.py`
+
+### 🔄 Workflows
+Orchestrate complex sequences of tasks.
+
+*   **Agno Workflow**: `examples/workflows/agno_workflow_example.py`
+*   **Translation Workflow (Agno)**: `examples/workflows/agno_workflow_translation.py`
+*   **Declarative Workflow (YAML-style)**: `examples/workflows/declarative_workflow_example.py`
+*   **CrewAI Declarative**: `examples/workflows/crewai_declarative_example.py`
+*   **Native Extensions**: `examples/workflows/native_extensions_example.py`
+*   **Workflow with Gemini**: `examples/workflows/workflow_native_gemini_example.py`
+
+### ⚡ Distributed & Parallel
+Scale your agents using the Ray runtime.
+
+*   **Parallel Execution**: `examples/distributed/parallel_execution_example.py`
+*   **Declarative Distributed**: `examples/distributed/distributed_declarative_example.py`
+*   **Imperative Distributed**: `examples/distributed/distributed_imperative_example.py`
+
+### 🛡️ Proxy & Gateway
+Use the built-in AI Gateway for model routing and key management.
+
+*   **Basic Proxy Usage**: `examples/proxy/proxy_example.py`
+*   **Advanced Proxy Config**: `examples/proxy/proxy_advanced_example.py`
+
+### 💡 Use Cases
+Real-world application scenarios.
+
+*   **Finance Workflow**: `examples/use_case/finance_workflow.py`
+*   **Memory Chat**: `examples/use_case/memory_chat_example.py`
+
+### 🟢 Basics
+Getting started with core concepts.
+
+*   **Blueprint Basics**: `examples/basics/blueprint_example.py`
 
 ## 🤝 Contributing
 

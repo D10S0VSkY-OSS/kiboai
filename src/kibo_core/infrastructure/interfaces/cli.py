@@ -22,7 +22,6 @@ def handle_memory(args):
 
         if args.mem_action == "add":
             text = " ".join(args.text)
-            # Assuming mem.add returns something or we just print success
             mem.add(text, user_id="cli_user")
             print(f"✅ Added memory: {text}")
 
@@ -31,7 +30,6 @@ def handle_memory(args):
             results = mem.search(query, user_id="cli_user")
             print(f"🔍 Found {len(results)} memories:")
             for r in results:
-                # Result format might vary, handling safely
                 content = r.get("memory", r) if isinstance(r, dict) else r
                 print(f"- {content}")
 
@@ -42,7 +40,6 @@ def handle_memory(args):
                 content = r.get("memory", r) if isinstance(r, dict) else r
                 print(f"- {content}")
         else:
-            # Should be handled by argparse but fallback
             print("Usage: kibo memory [add | search | list]")
 
     except ImportError:
@@ -51,7 +48,6 @@ def handle_memory(args):
         from traceback import print_exc
 
         print(f"❌ Error accessing memory: {e}")
-        # print_exc()
 
 
 def handle_serve(args):
@@ -70,11 +66,7 @@ def handle_serve(args):
 
 
 def handle_start(args, unknown_args):
-    # Check for 'db' subcommand simulation
-    # If the user typed 'kibo start db', 'db' might be in unknown_args if we didn't define it
-    # But let's check args structure.
 
-    # We defined 'service' as optional positional arg in setup.
     if args.service == "db":
         print("🚀 Starting ChromaDB Server...")
         chroma_cmd = ["chroma", "run", "--port", "8000", "--path", "chroma_db"]
@@ -86,13 +78,11 @@ def handle_start(args, unknown_args):
             print(f"❌ Error starting ChromaDB: {e}")
         return
 
-    # Normal Ray Start
     ray_exe = _check_executable("ray")
     print("🚀 Starting Kibo Node...")
 
     start_flags = ["--disable-usage-stats"]
 
-    # If explicitly flagged or passed in unknown args
     is_head = "--head" in unknown_args
 
     if is_head:
@@ -101,8 +91,6 @@ def handle_start(args, unknown_args):
     else:
         print("Initializing Kibo Worker Node...")
 
-    # Merge our flags with user passed flags (unknown_args)
-    # Deduplicate flags if needed
     final_args = unknown_args + [f for f in start_flags if f not in unknown_args]
 
     cmd = [ray_exe, "start"] + final_args
@@ -116,7 +104,6 @@ def handle_start(args, unknown_args):
 
         print("✅ Kibo Node started successfully.")
 
-        # Try to parse port for help message
         port = "6379"
         for i, arg in enumerate(final_args):
             if arg.startswith("--port="):
@@ -146,10 +133,8 @@ def handle_start_all(args):
 
     kibo_cmd = [sys.executable, "-m", "kibo_core.infrastructure.interfaces.cli"]
 
-    # 1. Start Proxy (Background)
     print("\n[1/2] Starting Gateway...")
     proxy_cmd = kibo_cmd + ["proxy", "start", "-d"]
-    # Add config if it exists
     if os.path.exists("examples/proxy_config.yaml"):
         proxy_cmd.extend(["--config", "examples/proxy_config.yaml"])
 
@@ -160,9 +145,7 @@ def handle_start_all(args):
         print("❌ Failed to start Gateway.")
         sys.exit(1)
 
-    # 2. Start Head Node
     print("\n[2/2] Starting Cluster Head Node...")
-    # Passing arguments to kibo start
     node_cmd = kibo_cmd + ["start", "--head", "--port=6379"]
 
     try:
@@ -227,7 +210,6 @@ def handle_status(args, unknown_args):
 def handle_proxy(args, unknown_args):
     litellm_exe = shutil.which("litellm")
     if not litellm_exe:
-        # Fallback to python module run
         litellm_exe_cmd = [sys.executable, "-m", "litellm"]
     else:
         litellm_exe_cmd = [litellm_exe]
@@ -235,11 +217,9 @@ def handle_proxy(args, unknown_args):
     if args.proxy_action == "start":
         print("🚀 Starting Kibo Gateway (LiteLLM Proxy)...")
 
-        # Check for detach flag
         run_background = False
         final_proxy_args = []
 
-        # Process known args and separate detach flag
         for arg in unknown_args:
             if arg in ["-d", "--detach"]:
                 run_background = True
@@ -315,7 +295,6 @@ def main():
         dest="command", title="Commands", help="Action to perform"
     )
 
-    # --- START ---
     start_examples = """Examples:
   kibo start db                        # Start ChromaDB service
   kibo start --head --port=6379        # Start a new Kibo Cluster Head Node
@@ -335,23 +314,19 @@ def main():
         choices=["db"],
         help="Optional service to start instead of a node (e.g., 'db' for ChromaDB).",
     )
-    # The rest of args are parsed as unknown for Ray
 
-    # --- START-ALL ---
     subparsers.add_parser(
         "start-all",
         help="Start the full platform (Head Node + Gateway).",
         description="Convenience command to launch both the Kibo Head Node and the API Gateway (Proxy).",
     )
 
-    # --- STOP ---
     subparsers.add_parser(
         "stop",
         help="Stop the local Kibo node.",
         description="Stops any running Ray processes on this machine.",
     )
 
-    # --- STATUS ---
     status_examples = """Examples:
   kibo status                          # Show status of local connection
   kibo status --address='127.0.0.1:6379' # Show status of specific cluster"""
@@ -364,7 +339,6 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
 
-    # --- PROXY ---
     proxy_examples = """Examples:
   kibo proxy start                     # Start proxy in foreground on port 4000
   kibo proxy start -d                  # Start proxy in background (detached)
@@ -384,11 +358,9 @@ def main():
     p_start.add_argument(
         "-d", "--detach", action="store_true", help="Run in background."
     )
-    # Other args passed to LiteLLM
 
     proxy_subs.add_parser("stop", help="Stop the proxy server.")
 
-    # --- MEMORY ---
     mem_parser = subparsers.add_parser(
         "memory",
         help="Manage Kibo Memory (Mem0).",
@@ -404,7 +376,6 @@ def main():
 
     mem_subs.add_parser("list", help="List all memories for the user.")
 
-    # --- SERVE ---
     serve_examples = """Examples:
   kibo serve my_agent.py               # Serve 'agent' from file on port 8000
   kibo serve ./src/agent.py --port 9000 # Custom port
@@ -432,8 +403,6 @@ def main():
         "--name", help="Name of the agent variable in the file (optional)."
     )
 
-    # PARSE
-    # process args. if no args, print help.
     if len(sys.argv) == 1:
         parser.print_help(sys.stderr)
         sys.exit(1)

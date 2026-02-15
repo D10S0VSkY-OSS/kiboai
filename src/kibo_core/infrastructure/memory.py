@@ -18,14 +18,12 @@ class KiboMemory:
                         instance.initialize()
                         cls._instance = instance
                     except Exception:
-                        # Initialization failed; do not store the broken instance.
                         raise
         return cls._instance
 
     def initialize(self):
         """Initialize Mem0 with local ChromaDB configuration by default."""
         try:
-            # Configure Vector Store (Chroma)
             vector_store_config = VectorStoreConfig(
                 provider="chroma",
                 config={
@@ -36,17 +34,9 @@ class KiboMemory:
                 },
             )
 
-            # Create Memory Config
-
-            # Mem0 relies on OpenAI by default.
-            # We configure it to use the Kibo Proxy (LiteLLM) which maps these models to actual providers.
-            # We ensure API Key and Base URL are set in environment for the OpenAI client to pick them up.
-
-            # Ensure we have at least a dummy key if none provided, to pass basic checks.
             if not os.getenv("OPENAI_API_KEY"):
                 os.environ["OPENAI_API_KEY"] = "sk-dummy-key-for-proxy"
 
-            # Set base URL to proxy if not set
             if not os.getenv("OPENAI_BASE_URL"):
                 os.environ["OPENAI_BASE_URL"] = "http://localhost:4000"
 
@@ -68,16 +58,13 @@ class KiboMemory:
                 llm=llm_config,
             )
 
-            # Initialize Memory
             try:
-                # Try direct instantiation first
                 self.memory = Memory(config=config)
             except Exception as e:
                 print(f"Error: Failed to initialize Memory with config: {e}")
                 print(
                     "Tip: Ensure 'kibo start db' is running if using ChromaDB server."
                 )
-                # Do NOT fallback to default Memory() as it uses invalid models for our proxy.
                 self.memory = None
                 raise e  # Re-raise to stop execution or let caller handle
         except Exception as e:

@@ -54,6 +54,9 @@ nav:
     - Distributed Execution: user-guide/distributed.md
     - AI Gateway: user-guide/gateway.md
   - Examples:
-    - Simple Agents: examples/simple-agents.md
-    - Parallel Execution: examples/parallel.md
-    - Complex Workflows: examples/workflows.md
+    - Basics: examples/basics.md
+    - Frameworks: examples/frameworks.md
+    - Workflows: examples/workflows.md
+    - Distributed: examples/distributed.md
+    - Gateway (Proxy): examples/proxy.md
+    - Use Cases: examples/use-cases.md
