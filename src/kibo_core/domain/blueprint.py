@@ -35,6 +35,10 @@ class AgentConfig(BaseModel):
         default_factory=dict, description="Engine-specific configuration."
     )
 
+    a2a: Optional[Any] = Field(
+        default=None, description="Optional A2A configuration for supported engines."
+    )
+
     model_config = ConfigDict(extra="allow")
 
     def run(self, input_data: Any) -> Any:

@@ -34,6 +34,7 @@ from .infrastructure.adapters.base import LazyAgentAdapter
 from .infrastructure.adapters.agno_adapter import AgnoAdapter
 from .infrastructure.adapters.pydantic_ai_adapter import PydanticAIAdapter
 from .infrastructure.adapters.langgraph_adapter import LangGraphAdapter
+from .infrastructure.a2a.config import A2AConfig
 
 __all__ = [
     "init",
@@ -52,4 +53,5 @@ __all__ = [
     "AgnoAdapter",
     "PydanticAIAdapter",
     "LangGraphAdapter",
+    "A2AConfig",
 ]
