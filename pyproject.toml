@@ -26,6 +26,7 @@ dependencies = [
     "mem0ai>=1.0.3",
     "chromadb>=1.1.1",
     "langchain-google-genai>=2.1.12",
+    "langfuse>=2.60.0",
 ]
 
 [project.scripts]

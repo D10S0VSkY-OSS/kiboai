@@ -39,6 +39,10 @@ class AgentConfig(BaseModel):
         default=None, description="Optional A2A configuration for supported engines."
     )
 
+    langfuse: Optional[Any] = Field(
+        default=None, description="Optional Langfuse tracing configuration."
+    )
+
     model_config = ConfigDict(extra="allow")
 
     def run(self, input_data: Any) -> Any:

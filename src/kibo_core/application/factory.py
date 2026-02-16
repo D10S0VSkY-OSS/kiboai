@@ -9,6 +9,10 @@ from kibo_core.infrastructure.a2a.adapter import (
     AgnoA2AClientAdapter,
     AgnoA2AServerAdapter,
 )
+from kibo_core.infrastructure.observability.langfuse import (
+    LangfuseTracingAdapter,
+    normalize_langfuse_config,
+)
 
 
 def _resolve_llm_params(bp: AgentConfig, api_key: str):
@@ -415,4 +419,8 @@ def create_distributed_agent(
     """
     Creates a LazyAgentAdapter ready for distributed execution from a Blueprint.
     """
-    return LazyAgentAdapter(agent_factory, blueprint=blueprint, api_key=api_key)
+    adapter = LazyAgentAdapter(agent_factory, blueprint=blueprint, api_key=api_key)
+    langfuse_config = normalize_langfuse_config(getattr(blueprint, "langfuse", None))
+    if langfuse_config and langfuse_config.enabled:
+        return LangfuseTracingAdapter(adapter, langfuse_config, agent_name=blueprint.name)
+    return adapter
