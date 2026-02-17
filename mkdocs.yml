@@ -59,4 +59,7 @@ nav:
     - Workflows: examples/workflows.md
     - Distributed: examples/distributed.md
     - Gateway (Proxy): examples/proxy.md
+    - Agent-to-Agent (A2A): examples/a2a.md
+    - Observability: examples/observability.md
+    - Prompt Versioning: examples/prompt-versioning.md
     - Use Cases: examples/use-cases.md

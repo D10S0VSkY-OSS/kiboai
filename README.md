@@ -18,6 +18,9 @@ Kibo goes beyond simple wrapping; it enables **distributed** and **parallel** ex
     *   **Distributed Mode**: Scale up using **Ray** as the execution backend for heavy workloads across clusters.
 *   **Native Tool Integration**: Pass native tools (like `LangChain Tools`, `Agno Toolkits`, or standard Python functions) directly to Kibo agents. The framework automatically adapts them if necessary.
 *   **Zero-Dependency Definitions**: Define agent behaviors in pure Python data structures (Blueprints).
+*   **Observability First**: Built-in support for **Langfuse** for tracing and monitoring agent execution.
+*   **Agent-to-Agent (A2A)**: Protocol for direct communication between agents, enabling complex multi-agent systems.
+*   **Prompt Versioning**: Manage and experiment with different versions of prompts easily.
 
 ## 📦 Installation
 
