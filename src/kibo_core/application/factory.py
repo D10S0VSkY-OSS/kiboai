@@ -422,5 +422,7 @@ def create_distributed_agent(
     adapter = LazyAgentAdapter(agent_factory, blueprint=blueprint, api_key=api_key)
     langfuse_config = normalize_langfuse_config(getattr(blueprint, "langfuse", None))
     if langfuse_config and langfuse_config.enabled:
-        return LangfuseTracingAdapter(adapter, langfuse_config, agent_name=blueprint.name)
+        return LangfuseTracingAdapter(
+            adapter, langfuse_config, agent_name=blueprint.name
+        )
     return adapter

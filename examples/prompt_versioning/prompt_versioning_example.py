@@ -16,7 +16,11 @@ def _extract_prompt_text(prompt_obj):
             if value:
                 return value
     if isinstance(prompt_obj, dict):
-        return prompt_obj.get("prompt") or prompt_obj.get("text") or prompt_obj.get("content")
+        return (
+            prompt_obj.get("prompt")
+            or prompt_obj.get("text")
+            or prompt_obj.get("content")
+        )
     return str(prompt_obj)
 
 
@@ -29,7 +33,9 @@ def main():
     secret_key = os.getenv("LANGFUSE_SECRET_KEY")
 
     if not host or not public_key or not secret_key:
-        logger.error("Missing Langfuse credentials. Check LANGFUSE_HOST/PUBLIC_KEY/SECRET_KEY.")
+        logger.error(
+            "Missing Langfuse credentials. Check LANGFUSE_HOST/PUBLIC_KEY/SECRET_KEY."
+        )
         return
 
     client = Langfuse(
