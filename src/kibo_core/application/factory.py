@@ -1,9 +1,18 @@
 import os
-from typing import Any, Callable
+from typing import Any, Callable, Optional
 from kibo_core.domain.blueprint import AgentConfig
 from kibo_core.infrastructure.adapters.base import LazyAgentAdapter
 from kibo_core.application.converters import convert_tools
 from crewai.llm import LLM
+from kibo_core.infrastructure.a2a.config import A2AConfig
+from kibo_core.infrastructure.a2a.adapter import (
+    AgnoA2AClientAdapter,
+    AgnoA2AServerAdapter,
+)
+from kibo_core.infrastructure.observability.langfuse import (
+    LangfuseTracingAdapter,
+    normalize_langfuse_config,
+)
 
 
 def _resolve_llm_params(bp: AgentConfig, api_key: str):
@@ -22,6 +31,57 @@ def _resolve_llm_params(bp: AgentConfig, api_key: str):
                 final_api_key = "sk-kibo-proxy"  # Dummy key for proxy
 
     return base_url, final_api_key
+
+
+def _normalize_a2a_config(value: Any) -> Optional[A2AConfig]:
+    if isinstance(value, A2AConfig):
+        return value
+    if isinstance(value, dict):
+        return A2AConfig(**value)
+    return None
+
+
+def _build_agno_model(bp: AgentConfig, api_key: str):
+    from agno.models.openai import OpenAIChat
+    from agno.models.litellm import LiteLLM
+
+    if not isinstance(bp.model, str):
+        return bp.model
+
+    base_url, final_key = _resolve_llm_params(bp, api_key)
+    if base_url:
+        return OpenAIChat(id=bp.model, base_url=base_url, api_key=final_key)
+    return LiteLLM(id=bp.model)
+
+
+def _build_agno_agent_instance(bp: AgentConfig, api_key: str):
+    from agno.agent import Agent
+
+    model = _build_agno_model(bp, api_key)
+    agent_config = bp.config.copy()
+
+    a2a_config = _normalize_a2a_config(getattr(bp, "a2a", None))
+    if a2a_config and a2a_config.agent_id and "id" not in agent_config:
+        agent_config["id"] = a2a_config.agent_id
+
+    markdown = agent_config.pop("markdown", True)
+    tools = agent_config.pop("tools", [])
+
+    agent_config.pop("base_url", None)
+    agent_config.pop("api_key", None)
+    agent_config.pop("temperature", None)
+
+    final_tools = convert_tools(tools, "agno")
+
+    return Agent(
+        name=bp.name,
+        model=model,
+        description=bp.description,
+        instructions=bp.instructions,
+        markdown=markdown,
+        tools=final_tools,
+        **agent_config,
+    )
 
 
 def _create_crewai_agent(bp: AgentConfig, api_key: str):
@@ -70,41 +130,9 @@ def _create_crewai_agent(bp: AgentConfig, api_key: str):
 
 
 def _create_agno_agent(bp: AgentConfig, api_key: str):
-    from agno.agent import Agent
     from kibo_core.infrastructure.adapters.agno_adapter import AgnoAdapter
-    from agno.models.openai import OpenAIChat
-    from agno.models.litellm import LiteLLM
 
-    if not isinstance(bp.model, str):
-        model = bp.model
-    else:
-        base_url, final_key = _resolve_llm_params(bp, api_key)
-
-        if base_url:
-            model = OpenAIChat(id=bp.model, base_url=base_url, api_key=final_key)
-        else:
-            model = LiteLLM(id=bp.model)
-
-    agent_config = bp.config.copy()
-
-    markdown = agent_config.pop("markdown", True)
-    tools = agent_config.pop("tools", [])
-
-    agent_config.pop("base_url", None)
-    agent_config.pop("api_key", None)
-
-    agent_config.pop("temperature", None)
-
-    final_tools = convert_tools(tools, "agno")
-
-    agent = Agent(
-        model=model,
-        description=bp.description,
-        instructions=bp.instructions,
-        markdown=markdown,
-        tools=final_tools,
-        **agent_config,  # Pass remaining config as kwargs
-    )
+    agent = _build_agno_agent_instance(bp, api_key)
 
     return AgnoAdapter(agent)
 
@@ -351,7 +379,20 @@ def agent_factory(blueprint: AgentConfig, api_key: str = None):
     """
     Worker-side factory that instantiates the concrete agent.
     """
+    a2a_config = _normalize_a2a_config(getattr(blueprint, "a2a", None))
     engine = blueprint.agent.lower()
+    if a2a_config and a2a_config.enabled and engine in ["agno", "phidata"]:
+        if a2a_config.mode == "client":
+            return AgnoA2AClientAdapter(a2a_config.resolved_base_url())
+        if a2a_config.mode == "server":
+            agno_agent = _build_agno_agent_instance(blueprint, api_key)
+            return AgnoA2AServerAdapter(
+                agno_agent,
+                host=a2a_config.host,
+                port=a2a_config.port,
+                agent_id=a2a_config.agent_id,
+                access_log=a2a_config.access_log,
+            )
 
     if engine == "crewai":
         return _create_crewai_agent(blueprint, api_key)
@@ -378,4 +419,10 @@ def create_distributed_agent(
     """
     Creates a LazyAgentAdapter ready for distributed execution from a Blueprint.
     """
-    return LazyAgentAdapter(agent_factory, blueprint=blueprint, api_key=api_key)
+    adapter = LazyAgentAdapter(agent_factory, blueprint=blueprint, api_key=api_key)
+    langfuse_config = normalize_langfuse_config(getattr(blueprint, "langfuse", None))
+    if langfuse_config and langfuse_config.enabled:
+        return LangfuseTracingAdapter(
+            adapter, langfuse_config, agent_name=blueprint.name
+        )
+    return adapter
