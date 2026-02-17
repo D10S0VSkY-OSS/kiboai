@@ -1,17 +1,16 @@
 import os
+from typing import Annotated, Dict, List, TypedDict, Union
 import operator
 from dotenv import load_dotenv
-from typing import Annotated, TypedDict, List
-from langchain_openai import ChatOpenAI
 
-# Load environment variables from .env file
+from langchain_core.messages import BaseMessage, HumanMessage
+
+from kibo_core import AgentConfig, KiboAgent
+from kibo_core.domain.graph import KiboGraph, START, END
+from kibo_core.infrastructure.graph_compiler import compile_graph
+
+# Load environment variables
 load_dotenv()
-
-from langchain_core.messages import BaseMessage, SystemMessage, HumanMessage
-from langgraph.graph import StateGraph, START, END
-
-from kibo_core import AgentConfig, create_agent
-from kibo_core.infrastructure.adapters.langgraph_adapter import LangGraphAdapter
 
 
 class AgentState(TypedDict):
@@ -21,123 +20,96 @@ class AgentState(TypedDict):
 
     messages: Annotated[List[BaseMessage], operator.add]
     topic: str
-    draft: str
-    critique: str
-
-
-def writer_node(state: AgentState):
-    """Generates a draft using a creative model (e.g. gpt-4o-mini)."""
-    print("--- Step 1: Writer Node ---")
-    topic = state.get("topic", "Technology")
-
-    # Simulate using a specific model configuration
-    # Note: Kibo's api_key can be passed down, but for raw LangGraph usage,
-    # we assume environment variable or explicit passing.
-    llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.7)
-
-    response = llm.invoke(
-        [
-            SystemMessage(
-                content="You are a technical writer. Write a short explanation about the topic."
-            ),
-            HumanMessage(content=f"Write about: {topic}"),
-        ]
-    )
-
-    return {"draft": response.content, "messages": [response]}
-
-
-def reviewer_node(state: AgentState):
-    """Reviews the draft using a more critical model."""
-    print("--- Step 2: Reviewer Node ---")
-    draft = state.get("draft", "")
-
-    # Simulate using a different model configuration
-    llm = ChatOpenAI(model="gpt-3.5-turbo", temperature=0.0)
-
-    response = llm.invoke(
-        [
-            SystemMessage(
-                content="You are an editor. Review the draft criticaly in 1 sentence."
-            ),
-            HumanMessage(content=f"Review this draft: {draft}"),
-        ]
-    )
-
-    return {"critique": response.content, "messages": [response]}
-
-
-def finalizer_node(state: AgentState):
-    """Finalizes the content based on critique."""
-    print("--- Step 3: Finalizer Node ---")
-    draft = state.get("draft")
-    critique = state.get("critique")
-
-    llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.5)
-
-    response = llm.invoke(
-        [
-            SystemMessage(content="Improve the draft based on the critique."),
-            HumanMessage(content=f"Draft: {draft}\nCritique: {critique}"),
-        ]
-    )
-
-    # Return the final message content as the last message for the adapter to pick up
-    return {"messages": [response]}
 
 
 def main():
-    print("--- Complex LangGraph + Kibo Example ---")
+    print("--- Kibo Native Graph Example (Declarative) ---")
 
     api_key = os.getenv("OPENAI_API_KEY")
     if not api_key:
         print("Warning: OPENAI_API_KEY not set.")
-        # return # Allow to crash if user wants to see import success
+        return
 
-    # --- 1. Define the Custom Graph ---
-    workflow = StateGraph(AgentState)
-
-    workflow.add_node("writer", writer_node)
-    workflow.add_node("reviewer", reviewer_node)
-    workflow.add_node("finalizer", finalizer_node)
-
-    # Define edges
-    workflow.add_edge(START, "writer")
-    workflow.add_edge("writer", "reviewer")
-    workflow.add_edge("reviewer", "finalizer")
-    workflow.add_edge("finalizer", END)
-
-    app = workflow.compile()
-
-    # --- 2. Create Adapter ---
-    # We manually wrap the compiled graph
-    custom_adapter = LangGraphAdapter(app)
-
-    # --- 3. Use Kibo to Execute ---
-    # We define a dummy config because we supply our own adapter
-    agent_def = AgentConfig(
-        name="ContentTeam",
-        description="Multi-model writing team",
-        instructions="N/A",
-        agent="langgraph",
-        model="mixed",
+    # 1. Define Kibo Agents (The "Nodes")
+    # These are pure config objects - execution engine is decided later
+    writer = AgentConfig(
+        name="TechWriter",
+        description="Write a draft about the topic.",
+        instructions="You are a technical writer. Write a short explanation about the requested topic.",
+        model="gpt-4o-mini",
+        config={"temperature": 0.7},
     )
 
-    # Pass the adapter to run it via Kibo infrastructure (local or distributed)
-    kibo_agent = create_agent(agent_def, api_key=api_key, adapter=custom_adapter)
+    reviewer = AgentConfig(
+        name="Editor",
+        description="Critique the draft.",
+        instructions="You are an editor. Review the previous text critically in 1 sentence.",
+        model="gpt-4o-mini",
+        config={"temperature": 0.0},
+    )
 
-    print("Dispatching task via Kibo Agent...")
+    finalizer = AgentConfig(
+        name="Publisher",
+        description="Finalize the text.",
+        instructions="Improve the draft based on the critique provided in the conversation history.",
+        model="gpt-4o-mini",
+        config={"temperature": 0.5},
+    )
+
+    # 2. Define the Graph Structure Declaratively
+    # 'KiboGraph' abstracts away the underlying StateGraph
+    graph = KiboGraph(
+        name="ContentPipeline", state_schema=AgentState, entry_point="writer"
+    )
+
+    # Add Nodes (Agents)
+    graph.add_node("writer", agent=writer)
+    graph.add_node("reviewer", agent=reviewer)
+    graph.add_node("finalizer", agent=finalizer)
+
+    # Add Edges (Flow)
+    # Sequential: Writer -> Reviewer -> Finalizer -> End
+    graph.add_edge(START, "writer")
+    graph.add_edge("writer", "reviewer")
+    graph.add_edge("reviewer", "finalizer")
+    graph.add_edge("finalizer", END)
+
+    # 3. Compile & Run
+    # Kibo compiles this to a runnable app (currently using LangGraph as backend)
+    # In the future, this could compile to a pure Ray DAG without LangGraph if needed.
+    print("Compiling KiboGraph to LangGraph adapter...")
+    adapter = compile_graph(graph, api_key=api_key)
+
+    # Wrap the adapter in a KiboAgent to use the standardized execution interface
+    # This allows us to run it locally or distributed (via Ray)
+    kibo_agent = KiboAgent(
+        config=AgentConfig(
+            name="ContentPipelineGraph",
+            description="Orchestrates the writing process.",
+            instructions="Execute the graph workflow.",
+            agent="langgraph",
+            model="mixed",
+        ),
+        adapter=adapter,
+    )
+
+    print("Dispatching task via Kibo Graph...")
     try:
         # Input matching our State definition
-        input_data = {"topic": "Event Driven Architecture"}
+        # Kibo's compiler wrapper automatically handles passing this inputs to the first agent
+        input_data = {"messages": [HumanMessage(content="Event Driven Architecture")]}
 
+        # app is a LangGraphAdapter instance, which we can treat as a "Super Agent"
         result = kibo_agent.run(input_data)
 
-        print("\n--- Final Kibo Result ---")
+        print("\n--- Final Result ---")
         print(f"Output: {result.output_data}")
 
     except Exception as e:
         print(f"Error: {e}")
+        import traceback
+
+        traceback.print_exc()
 
 
 if __name__ == "__main__":
