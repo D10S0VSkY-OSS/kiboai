@@ -37,6 +37,8 @@ from .infrastructure.adapters.langgraph_adapter import LangGraphAdapter
 from .infrastructure.a2a.config import A2AConfig
 from .infrastructure.observability.langfuse import LangfuseConfig
 
+from .domain.graph import KiboGraph, Node, Edge, START, END
+
 __all__ = [
     "init",
     "get",
@@ -56,4 +58,9 @@ __all__ = [
     "LangGraphAdapter",
     "A2AConfig",
     "LangfuseConfig",
+    "KiboGraph",
+    "Node",
+    "Edge",
+    "START",
+    "END",
 ]
