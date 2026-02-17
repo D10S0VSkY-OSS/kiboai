@@ -1,5 +1,9 @@
 # Welcome to Kibo AI
 
+<p align="center">
+  <img src="assets/images/kibo.jpg" alt="Kibo AI Logo" width="200"/>
+</p>
+
 **The Universal Distributed Agent Framework**
 
 **Kibo** is a powerful and flexible abstraction framework designed to unify the orchestration of AI Agents. It provides a standardized interface to define, execute, and combine agents from various underlying libraries (like **Agno**, **LangChain**, **CrewAI**, and **PydanticAI**).

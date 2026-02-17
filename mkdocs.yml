@@ -6,6 +6,8 @@ repo_name: D10S0VSkY-OSS/kiboai
 
 theme:
   name: material
+  logo: assets/images/logo.png
+  favicon: assets/images/logo.png
   palette:
     # Palette toggle for light mode
     - media: "(prefers-color-scheme: light)"
@@ -30,6 +32,9 @@ theme:
     - navigation.expand
     - content.code.copy
     - content.code.annotate
+
+  # Custom directory for overrides (header logo etc)
+  custom_dir: docs/overrides
 
 markdown_extensions:
   - admonition

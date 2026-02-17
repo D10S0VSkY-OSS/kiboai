@@ -1,5 +1,9 @@
 # Kibo AI Framework
 
+<p align="center">
+  <img src="docs/assets/images/kibo.jpg" alt="Kibo AI Logo" width="200"/>
+</p>
+
 **Kibo** is a powerful and flexible abstraction framework designed to unify the orchestration of AI Agents. It allows developers to define, execute, and combine agents from different underlying libraries (like **Agno**, **LangChain**, **CrewAI**, and **PydanticAI**) within a single, consistent interface.
 
 Kibo goes beyond simple wrapping; it enables **distributed** and **parallel** execution of agents, allowing you to build complex, high-performance AI workflows that scale across multiple nodes or naturally on a single machine. It includes a unified **Native Tooling** system and a built-in **AI Gateway**.
