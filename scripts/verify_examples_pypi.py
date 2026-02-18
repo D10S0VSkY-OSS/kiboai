@@ -8,6 +8,7 @@ import re
 
 # Load .env file
 from dotenv import load_dotenv
+
 load_dotenv()
 
 # Configuration
@@ -46,6 +47,7 @@ TEST_CASES = [
     },
 ]
 
+
 def get_package_version():
     """Extracts package version from pyproject.toml."""
     pyproject_path = PROJECT_ROOT / "pyproject.toml"
@@ -56,16 +58,12 @@ def get_package_version():
             return match.group(1)
     return None
 
+
 def run_command(cmd, cwd=None, env=None):
     """Runs a shell command and streams output."""
     print(f"Executing: {' '.join(cmd)}")
     process = subprocess.Popen(
-        cmd,
-        cwd=cwd,
-        env=env,
-        stdout=sys.stdout,
-        stderr=sys.stderr,
-        text=True
+        cmd, cwd=cwd, env=env, stdout=sys.stdout, stderr=sys.stderr, text=True
     )
     process.wait()
     if process.returncode != 0:
@@ -73,64 +71,78 @@ def run_command(cmd, cwd=None, env=None):
         raise subprocess.CalledProcessError(process.returncode, cmd)
     return "Output streamed directly to console"
 
+
 def create_venv(venv_path):
     """Creates a virtual environment using uv."""
     print(f"Creating virtual environment at {venv_path}...")
     if os.path.exists(venv_path):
         shutil.rmtree(venv_path)
-    
+
     try:
         run_command(["uv", "venv", str(venv_path)])
     except (FileNotFoundError, subprocess.CalledProcessError):
         print("uv not found, falling back to standard venv module.")
         venv.create(venv_path, with_pip=True)
 
+
 def get_python_executable(venv_path):
     if sys.platform == "win32":
         return venv_path / "Scripts" / "python.exe"
     return venv_path / "bin" / "python"
+
 
 def install_from_testpypi(python_exe, version, extras):
     """Installs the package from TestPyPI with specified extras."""
     extras_str = ",".join(extras)
     pkg_spec = f"kiboai[{extras_str}]=={version}"
     print(f"Installing {pkg_spec} from TestPyPI...")
-    
+
     # Construct uv pip install command
     # uv pip install -p <python> --index-url <testpypi> --extra-index-url <pypi> package
     uv_cmd = [
-        "uv", "pip", "install", 
-        "-p", str(python_exe),
-        "--index-url", TEST_PYPI_INDEX,
-        "--extra-index-url", PYPI_INDEX,
-        pkg_spec
+        "uv",
+        "pip",
+        "install",
+        "-p",
+        str(python_exe),
+        "--index-url",
+        TEST_PYPI_INDEX,
+        "--extra-index-url",
+        PYPI_INDEX,
+        pkg_spec,
     ]
-    
+
     try:
         run_command(uv_cmd, cwd=PROJECT_ROOT)
     except (FileNotFoundError, subprocess.CalledProcessError):
         print("uv failed or not found, falling back to standard pip.")
         # Only standard pip fallback (might be slower and tricky with index-url mixing)
         pip_cmd = [
-            str(python_exe), "-m", "pip", "install",
-            "--index-url", TEST_PYPI_INDEX,
-            "--extra-index-url", PYPI_INDEX,
-            pkg_spec
+            str(python_exe),
+            "-m",
+            "pip",
+            "install",
+            "--index-url",
+            TEST_PYPI_INDEX,
+            "--extra-index-url",
+            PYPI_INDEX,
+            pkg_spec,
         ]
         run_command(pip_cmd, cwd=PROJECT_ROOT)
+
 
 def run_example(python_exe, script_path):
     """Runs the example script."""
     print(f"Running example: {script_path}...")
     env = os.environ.copy()
-    
+
     # We want to ensure we use the INSTALLED package, not the local source.
-    # The examples usually append 'src' to sys.path. 
-    # Since sys.path.append adds to the END, and site-packages is earlier, 
+    # The examples usually append 'src' to sys.path.
+    # Since sys.path.append adds to the END, and site-packages is earlier,
     # the installed package *should* take precedence.
     # To be absolutely sure, we can set PYTHONPATH to exclude src if it was explicitly set?
     # No, let's trust sys.path order.
-    
+
     cmd = [str(python_exe), str(script_path)]
     try:
         run_command(cmd, cwd=script_path.parent, env=env)
@@ -139,10 +151,13 @@ def run_example(python_exe, script_path):
         print("❌ Failed!")
         # Check if failure is due to missing API keys
         if "api_key" in e.stderr.lower() or "apikey" in e.stderr.lower():
-             print("⚠️ Failure likely due to missing API Keys. This is expected if .env is missing.")
+            print(
+                "⚠️ Failure likely due to missing API Keys. This is expected if .env is missing."
+            )
         else:
-             # It might fail if package not found or import error
-             raise e
+            # It might fail if package not found or import error
+            raise e
+
 
 def main():
     version = get_package_version()
@@ -154,31 +169,34 @@ def main():
     print(f"🌍 Using Index: {TEST_PYPI_INDEX} (with fallback to {PYPI_INDEX})")
 
     venv_root = PROJECT_ROOT / ".venv_test_pypi_suite"
-    
+
     for test in TEST_CASES:
         print(f"\n==============================================")
         print(f"Testing Install & Run for: {test['name']}")
         print(f"==============================================")
-        
+
         test_venv = venv_root / f"venv_{test['extras'][0]}"
         create_venv(test_venv)
         py_exe = get_python_executable(test_venv)
-        
+
         try:
-            install_from_testpypi(py_exe, version, test['extras'])
-            
+            install_from_testpypi(py_exe, version, test["extras"])
+
             # Verify installation location
             verify_cmd = [str(py_exe), "-c", "import kiboai; print(kiboai.__file__)"]
             output = run_command(verify_cmd)
             print(f"✅ Verified installed locations: {output.strip()}")
             if "site-packages" not in output and "dist-packages" not in output:
-                 print("⚠️ WARMING: It seems to be importing from source/local path, not installed package!")
+                print(
+                    "⚠️ WARMING: It seems to be importing from source/local path, not installed package!"
+                )
 
-            run_example(py_exe, test['script'])
+            run_example(py_exe, test["script"])
         except Exception as e:
             print(f"❌ Test failed for {test['name']}: {e}")
 
     print("\nTests completed.")
+
 
 if __name__ == "__main__":
     main()

@@ -7,6 +7,7 @@ from pathlib import Path
 
 # Load .env file
 from dotenv import load_dotenv
+
 load_dotenv()
 
 # Configuration
@@ -27,12 +28,15 @@ TEST_CASES = [
     {
         "name": "LangChain",
         "script": EXAMPLES_DIR / "langchain" / "langchain_tool_example.py",
-        "extras": ["langchain", "web"], # langchain tool example might need duckduckgo/tavily
+        "extras": [
+            "langchain",
+            "web",
+        ],  # langchain tool example might need duckduckgo/tavily
     },
     {
         "name": "LangGraph",
         "script": EXAMPLES_DIR / "langgraph" / "langgraph_native_gemini_example.py",
-        "extras": ["langgraph", "langchain"], # langgraph often needs langchain base
+        "extras": ["langgraph", "langchain"],  # langgraph often needs langchain base
     },
     {
         "name": "PydanticAI",
@@ -41,31 +45,30 @@ TEST_CASES = [
     },
 ]
 
+
 def run_command(cmd, cwd=None, env=None):
     """Runs a shell command and streams output."""
     print(f"Executing: {' '.join(cmd)}")
     process = subprocess.Popen(
-        cmd,
-        cwd=cwd,
-        env=env,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True
+        cmd, cwd=cwd, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
     )
     stdout, stderr = process.communicate()
     if process.returncode != 0:
         print(f"Error executing command: {' '.join(cmd)}")
         print("STDOUT:", stdout)
         print("STDERR:", stderr)
-        raise subprocess.CalledProcessError(process.returncode, cmd, output=stdout, stderr=stderr)
+        raise subprocess.CalledProcessError(
+            process.returncode, cmd, output=stdout, stderr=stderr
+        )
     return stdout
+
 
 def create_venv(venv_path):
     """Creates a virtual environment using uv if available, else venv."""
     print(f"Creating virtual environment at {venv_path}...")
     if os.path.exists(venv_path):
         shutil.rmtree(venv_path)
-    
+
     # Try using uv first
     try:
         run_command(["uv", "venv", str(venv_path)])
@@ -73,17 +76,19 @@ def create_venv(venv_path):
         print("uv not found, falling back to standard venv module.")
         venv.create(venv_path, with_pip=True)
 
+
 def get_python_executable(venv_path):
     if sys.platform == "win32":
         return venv_path / "Scripts" / "python.exe"
     return venv_path / "bin" / "python"
+
 
 def install_package(python_exe, extras):
     """Installs the local package with specified extras."""
     extras_str = ",".join(extras)
     pkg_spec = f".[{extras_str}]"
     print(f"Installing {pkg_spec}...")
-    
+
     # Try using uv first
     try:
         # invoke uv pip install -p python_exe pkg_spec
@@ -96,6 +101,7 @@ def install_package(python_exe, extras):
         pip_cmd = [str(python_exe), "-m", "pip", "install", pkg_spec]
         run_command(pip_cmd, cwd=PROJECT_ROOT)
 
+
 def run_example(python_exe, script_path):
     """Runs the example script."""
     print(f"Running example: {script_path}...")
@@ -103,10 +109,10 @@ def run_example(python_exe, script_path):
     # Ensure PYTHONPATH includes src so examples can run even if installed in editable mode?
     # Actually, we want to test installed package.
     # But examples might have relative imports or sys.path hacks.
-    # The examples provided have sys.path hacks to include ../src. 
+    # The examples provided have sys.path hacks to include ../src.
     # This might conflict if we want to test installed package vs local source.
     # But since we install with `pip install .`, it installs the source.
-    
+
     cmd = [str(python_exe), str(script_path)]
     try:
         run_command(cmd, cwd=script_path.parent, env=env)
@@ -115,9 +121,12 @@ def run_example(python_exe, script_path):
         print("❌ Failed!")
         # Check if failure is due to missing API keys (common in integration tests)
         if "api_key" in e.stderr.lower() or "apikey" in e.stderr.lower():
-            print("⚠️ Failure likely due to missing API Keys. This is expected if .env is missing.")
+            print(
+                "⚠️ Failure likely due to missing API Keys. This is expected if .env is missing."
+            )
         else:
             raise e
+
 
 def main():
     venv_root = PROJECT_ROOT / ".venv_test_suite"
@@ -135,21 +144,24 @@ def main():
         print(f"\n==============================================")
         print(f"Testing Framework: {test['name']}")
         print(f"==============================================")
-        
+
         test_venv = venv_root / f"venv_{test['extras'][0]}"
         create_venv(test_venv)
         py_exe = get_python_executable(test_venv)
-        
+
         try:
-            install_package(py_exe, test['extras'])
-            run_example(py_exe, test['script'])
+            install_package(py_exe, test["extras"])
+            run_example(py_exe, test["script"])
         except Exception as e:
             print(f"Test failed for {test['name']}: {e}")
         finally:
-            pass # Keep venv for inspection? Or delete?
+            pass  # Keep venv for inspection? Or delete?
             # shutil.rmtree(test_venv) # Uncomment to clean up
 
-    print("\nTests failed are expected if you don't have API keys configured in environment variables.")
+    print(
+        "\nTests failed are expected if you don't have API keys configured in environment variables."
+    )
+
 
 if __name__ == "__main__":
     main()
