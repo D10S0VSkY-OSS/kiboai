@@ -11,7 +11,7 @@ Demonstrates running multiple agents concurrently. This example dispatches multi
 import sys
 import os
 import time
-from kibo_core import AgentConfig, create_agent
+from kiboai import AgentConfig, create_agent
 
 
 def main():
@@ -90,7 +90,7 @@ from dotenv import load_dotenv
 load_dotenv()
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "src"))
 
-from kibo_core import AgentConfig, create_agent
+from kiboai import AgentConfig, create_agent
 
 
 def main():
@@ -135,7 +135,7 @@ from dotenv import load_dotenv
 load_dotenv()
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "src"))
 
-from kibo_core import AgentConfig, create_agent
+from kiboai import AgentConfig, create_agent
 
 
 def main():

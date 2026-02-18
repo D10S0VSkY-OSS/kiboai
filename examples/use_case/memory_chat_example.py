@@ -2,12 +2,12 @@ import sys
 import os
 import time
 
-# Ensure we can import kibo_core
+# Ensure we can import kiboai
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "src"))
 
-from kibo_core.infrastructure.memory import KiboMemory
-from kibo_core.domain.blueprint import AgentConfig
-from kibo_core.infrastructure.interfaces.client import KiboAgent
+from kiboai.infrastructure.memory import KiboMemory
+from kiboai.domain.blueprint import AgentConfig
+from kiboai.infrastructure.interfaces.client import KiboAgent
 from rich.console import Console
 from rich.markdown import Markdown
 

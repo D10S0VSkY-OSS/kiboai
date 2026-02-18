@@ -1,5 +1,5 @@
 import os
-from kibo_core import AgentConfig, create_agent
+from kiboai import AgentConfig, create_agent
 
 
 def main():

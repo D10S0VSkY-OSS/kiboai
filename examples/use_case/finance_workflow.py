@@ -7,8 +7,8 @@ from dotenv import load_dotenv
 load_dotenv()
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "src"))
 
-from kibo_core import AgentConfig, create_agent
-from kibo_core.infrastructure.tools import TavilySearchTool
+from kiboai import AgentConfig, create_agent
+from kiboai.infrastructure.tools import TavilySearchTool
 
 PROXY_URL = os.getenv("KIBO_PROXY_URL", "http://localhost:4000")
 MODEL_NAME = "openai/gpt-4o-mini"

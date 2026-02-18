@@ -16,7 +16,7 @@ from dotenv import load_dotenv
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../src")))
 
 from langfuse import Langfuse
-from kibo_core.shared_kernel.logging import logger
+from kiboai.shared_kernel.logging import logger
 
 
 def _extract_prompt_text(prompt_obj):

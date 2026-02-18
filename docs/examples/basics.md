@@ -9,7 +9,7 @@ This example demonstrates how to define an agent using the `AgentConfig` bluepri
 
 ```python
 import os
-from kibo_core import AgentConfig, create_agent
+from kiboai import AgentConfig, create_agent
 
 
 def main():

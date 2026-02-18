@@ -3,9 +3,9 @@ from typing import TypedDict, Annotated, List
 import operator
 from dotenv import load_dotenv
 
-from kibo_core.domain.blueprint import AgentConfig
-from kibo_core.domain.workflow_definitions import WorkflowConfig, WorkflowStep
-from kibo_core import create_workflow, KiboAgent
+from kiboai.domain.blueprint import AgentConfig
+from kiboai.domain.workflow_definitions import WorkflowConfig, WorkflowStep
+from kiboai import create_workflow, KiboAgent
 from langchain_core.messages import HumanMessage, BaseMessage
 
 # Load environment variables

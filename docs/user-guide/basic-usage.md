@@ -7,7 +7,7 @@ This guide covers how to create simple agents and use native tools.
 The `AgentConfig` acts as the DNA of your agent.
 
 ```python
-from kibo_core import AgentConfig
+from kiboai import AgentConfig
 
 agent_def = AgentConfig(
     name="MathTutor",
@@ -24,7 +24,7 @@ Kibo provides first-class support for the native tool ecosystems of underlying f
 
 ### Example: Using Agno YFinance Tool
 ```python
-from kibo_core import create_agent, AgentConfig
+from kiboai import create_agent, AgentConfig
 from agno.tools.yfinance import YFinanceTools
 
 # Instantiate the native tool

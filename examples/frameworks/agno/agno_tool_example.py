@@ -4,7 +4,7 @@ import sys
 # Ensure Kibo is in path for imports
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "src"))
 
-from kibo_core import AgentConfig, create_agent
+from kiboai import AgentConfig, create_agent
 
 try:
     from agno.tools.yfinance import YFinanceTools

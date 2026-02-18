@@ -1,7 +1,7 @@
 import os
 
-from kibo_core import AgentConfig, A2AConfig, create_agent
-from kibo_core.shared_kernel.logging import logger
+from kiboai import AgentConfig, A2AConfig, create_agent
+from kiboai.shared_kernel.logging import logger
 
 
 def main():

@@ -41,7 +41,7 @@ See `examples/parallel_execution_example.py` for a complete runnable script.
 
 ```python
 import time
-from kibo_core import AgentConfig, create_agent
+from kiboai import AgentConfig, create_agent
 
 tasks = ["Task A", "Task B", "Task C"]
 futures = []

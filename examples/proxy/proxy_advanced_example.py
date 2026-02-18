@@ -1,5 +1,5 @@
 import os
-from kibo_core import KiboAgent, AgentConfig
+from kiboai import KiboAgent, AgentConfig
 
 VIRTUAL_KEY = "sk-any-random-key"
 
