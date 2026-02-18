@@ -5,15 +5,18 @@ from kibo_core.domain.entities import AgentRequest, AgentResult, AgentContext
 from kibo_core.domain.ports import IAgentNode
 from kibo_core.shared_kernel.logging import logger
 
-import asyncio
-from typing import Optional
+try:
+    from agno.client.a2a import A2AClient
+    from agno.os import AgentOS
+    from agno.os.interfaces.a2a import A2A
 
-from agno.client.a2a import A2AClient
-from agno.os import AgentOS
-from agno.os.interfaces.a2a import A2A
-from kibo_core.domain.entities import AgentRequest, AgentResult
-from kibo_core.domain.ports import IAgentNode
-from kibo_core.shared_kernel.logging import logger
+    AGNO_AVAILABLE = True
+except ImportError:
+    AGNO_AVAILABLE = False
+    # Define dummy classes or handle availability check in __init__
+    A2AClient = object
+    AgentOS = object
+    A2A = object
 
 
 class AgnoA2AServerAdapter(IAgentNode):
@@ -25,6 +28,10 @@ class AgnoA2AServerAdapter(IAgentNode):
         agent_id: str,
         access_log: bool,
     ):
+        if not AGNO_AVAILABLE:
+            raise ImportError(
+                "Agno is not installed. Please install 'kiboai[agno]' to use A2A features."
+            )
         self.agent = agent
         self.host = host
         self.port = port

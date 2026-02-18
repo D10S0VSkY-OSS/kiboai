@@ -1,4 +1,11 @@
-import ray
+try:
+    import ray
+
+    RAY_AVAILABLE = True
+except ImportError:
+    ray = None
+    RAY_AVAILABLE = False
+
 import logging
 from kibo_core.shared_kernel.logging import silence_ray_logs
 
@@ -17,6 +24,11 @@ def kibo_init(address: str = None, distributed_execution: bool = False, **kwargs
     if not distributed_execution:
         print("Running in LOCAL mode (Distributed execution disabled).")
         return None
+
+    if not RAY_AVAILABLE:
+        raise ImportError(
+            "Ray is not installed. Please install 'kiboai[ray]' to use distributed execution."
+        )
 
     silence_ray_logs()
     print("Initializing Kibo Runtime...")

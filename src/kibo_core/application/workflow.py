@@ -1,9 +1,12 @@
 from uuid import uuid4
 from kibo_core.domain.entities import AgentRequest, AgentContext
 from kibo_core.domain.ports import IAgentNode
-from kibo_core.infrastructure.executors.ray_executor import RayDistributedExecutor
+
+# Delayed import to avoid hard dependency on Ray
+# from kibo_core.infrastructure.executors.ray_executor import RayDistributedExecutor
+# import ray
+
 from kibo_core.infrastructure.executors.local_executor import LocalExecutor
-import ray
 
 
 class DistributedWorkflowService:
@@ -25,8 +28,17 @@ class DistributedWorkflowService:
     @property
     def ray_executor(self):
         if self._ray_executor is None:
-            # Only connect to Ray when absolutely needed
-            self._ray_executor = RayDistributedExecutor()
+            try:
+                from kibo_core.infrastructure.executors.ray_executor import (
+                    RayDistributedExecutor,
+                )
+
+                # Only connect to Ray when absolutely needed
+                self._ray_executor = RayDistributedExecutor()
+            except ImportError as e:
+                raise ImportError(
+                    "Ray is not installed. Please install 'kiboai[ray]' to use distributed execution."
+                ) from e
         return self._ray_executor
 
     def _GetExecutor(self, distributed_override: bool = None):
@@ -60,7 +72,9 @@ class DistributedWorkflowService:
         future = executor.execute_remote(agent, request)
 
         if is_distributed:
-            result = ray.get(future)
+            import kibo_core.infrastructure.runtime as runtime
+
+            result = runtime.get(future)
         else:
             result = future.result()
 

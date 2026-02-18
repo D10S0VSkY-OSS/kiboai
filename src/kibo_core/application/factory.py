@@ -3,12 +3,12 @@ from typing import Any, Callable, Optional
 from kibo_core.domain.blueprint import AgentConfig
 from kibo_core.infrastructure.adapters.base import LazyAgentAdapter
 from kibo_core.application.converters import convert_tools
-from crewai.llm import LLM
 from kibo_core.infrastructure.a2a.config import A2AConfig
-from kibo_core.infrastructure.a2a.adapter import (
-    AgnoA2AClientAdapter,
-    AgnoA2AServerAdapter,
-)
+
+# Lazy imports moved to usage sites
+# from crewai.llm import LLM
+# from kibo_core.infrastructure.a2a.adapter import ...
+
 from kibo_core.infrastructure.observability.langfuse import (
     LangfuseTracingAdapter,
     normalize_langfuse_config,
@@ -86,6 +86,7 @@ def _build_agno_agent_instance(bp: AgentConfig, api_key: str):
 
 def _create_crewai_agent(bp: AgentConfig, api_key: str):
     from crewai import Agent, Task, Crew, Process
+    from crewai.llm import LLM
     from kibo_core.infrastructure.adapters.crewai_adapter import CrewAIAdapter
 
     if not isinstance(bp.model, str):
@@ -382,6 +383,11 @@ def agent_factory(blueprint: AgentConfig, api_key: str = None):
     a2a_config = _normalize_a2a_config(getattr(blueprint, "a2a", None))
     engine = blueprint.agent.lower()
     if a2a_config and a2a_config.enabled and engine in ["agno", "phidata"]:
+        from kibo_core.infrastructure.a2a.adapter import (
+            AgnoA2AClientAdapter,
+            AgnoA2AServerAdapter,
+        )
+
         if a2a_config.mode == "client":
             return AgnoA2AClientAdapter(a2a_config.resolved_base_url())
         if a2a_config.mode == "server":
