@@ -9,7 +9,7 @@ Start the proxy and route simple requests.
 
 ```python
 import os
-from kibo_core import KiboAgent, AgentConfig
+from kiboai import KiboAgent, AgentConfig
 
 os.environ["KIBO_PROXY_URL"] = "http://localhost:4000"
 

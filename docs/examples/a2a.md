@@ -10,8 +10,8 @@ This example shows how to implement an agent that acts as a client, sending requ
 ```python
 import os
 
-from kibo_core import AgentConfig, A2AConfig, create_agent
-from kibo_core.shared_kernel.logging import logger
+from kiboai import AgentConfig, A2AConfig, create_agent
+from kiboai.shared_kernel.logging import logger
 
 
 def main():
@@ -64,8 +64,8 @@ This example demonstrates how to implement an agent that acts as a server, recei
 ```python
 import os
 
-from kibo_core import AgentConfig, A2AConfig, create_agent
-from kibo_core.shared_kernel.logging import logger
+from kiboai import AgentConfig, A2AConfig, create_agent
+from kiboai.shared_kernel.logging import logger
 
 
 def main():

@@ -36,7 +36,7 @@ Create a file named `my_agent.py`:
 
 ```python
 import os
-from kibo_core import AgentConfig, create_agent
+from kiboai import AgentConfig, create_agent
 
 # 1. Define
 config = AgentConfig(

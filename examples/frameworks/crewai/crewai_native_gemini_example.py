@@ -1,6 +1,6 @@
 import os
 from dotenv import load_dotenv
-from kibo_core import AgentConfig, create_agent
+from kiboai import AgentConfig, create_agent
 
 # Import Native CrewAI Class
 try:

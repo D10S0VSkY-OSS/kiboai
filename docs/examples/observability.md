@@ -15,8 +15,8 @@ from dotenv import load_dotenv
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../src")))
 
-from kibo_core import AgentConfig, LangfuseConfig, create_agent
-from kibo_core.shared_kernel.logging import logger
+from kiboai import AgentConfig, LangfuseConfig, create_agent
+from kiboai.shared_kernel.logging import logger
 
 
 def main():

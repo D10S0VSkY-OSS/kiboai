@@ -5,9 +5,9 @@ from dotenv import load_dotenv
 
 from langchain_core.messages import BaseMessage, HumanMessage
 
-from kibo_core import AgentConfig, KiboAgent
-from kibo_core.domain.graph import KiboGraph, START, END
-from kibo_core.infrastructure.graph_compiler import compile_graph
+from kiboai import AgentConfig, KiboAgent
+from kiboai.domain.graph import KiboGraph, START, END
+from kiboai.infrastructure.graph_compiler import compile_graph
 
 # Load environment variables
 load_dotenv()

@@ -11,7 +11,7 @@ Location: `examples/frameworks/agno/`
 
 ```python
 import os
-from kibo_core import AgentConfig, create_agent
+from kiboai import AgentConfig, create_agent
 
 
 def main():
@@ -62,7 +62,7 @@ Location: `examples/frameworks/crewai/`
 ```python
 import sys
 import os
-from kibo_core import AgentConfig, create_agent
+from kiboai import AgentConfig, create_agent
 
 
 def main():
@@ -113,7 +113,7 @@ Location: `examples/frameworks/langchain/`
 ```python
 import sys
 import os
-from kibo_core import AgentConfig, create_agent
+from kiboai import AgentConfig, create_agent
 
 
 def main():
@@ -181,9 +181,9 @@ from dotenv import load_dotenv
 
 from langchain_core.messages import BaseMessage, HumanMessage
 
-from kibo_core import AgentConfig, KiboAgent
-from kibo_core.domain.graph import KiboGraph, START, END
-from kibo_core.infrastructure.graph_compiler import compile_graph
+from kiboai import AgentConfig, KiboAgent
+from kiboai.domain.graph import KiboGraph, START, END
+from kiboai.infrastructure.graph_compiler import compile_graph
 
 # Load environment variables
 load_dotenv()
@@ -314,9 +314,9 @@ except ImportError:
     print("Please install langchain-google-genai module.")
     exit(1)
 
-from kibo_core import AgentConfig, KiboAgent
-from kibo_core.domain.graph import KiboGraph, START, END
-from kibo_core.infrastructure.graph_compiler import compile_graph
+from kiboai import AgentConfig, KiboAgent
+from kiboai.domain.graph import KiboGraph, START, END
+from kiboai.infrastructure.graph_compiler import compile_graph
 
 
 # Load environment variables
@@ -461,7 +461,7 @@ Demonstrating the integration with PydanticAI for type-safe agent interactions.
 
 ```python
 import os
-from kibo_core import AgentConfig, create_agent
+from kiboai import AgentConfig, create_agent
 
 
 def main():

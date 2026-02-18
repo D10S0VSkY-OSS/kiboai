@@ -3,7 +3,7 @@ import sys
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "src"))
 
-from kibo_core import AgentConfig, create_agent
+from kiboai import AgentConfig, create_agent
 from crewai.tools import BaseTool
 from pydantic import BaseModel, Field
 

@@ -4,7 +4,7 @@ import sys
 # Ensure Kibo is in path for imports
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "src"))
 
-from kibo_core import AgentConfig, create_agent
+from kiboai import AgentConfig, create_agent
 
 # Set a dummy key to avoid init errors if the user hasn't set it yet
 if "SERPER_API_KEY" not in os.environ:

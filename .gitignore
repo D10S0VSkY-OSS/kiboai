@@ -214,3 +214,7 @@ site/
 models.json
 agno_output.txt
 debug_*.py
+
+# Test suites
+.venv_test_suite/
+.venv*/
