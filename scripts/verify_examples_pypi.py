@@ -63,17 +63,15 @@ def run_command(cmd, cwd=None, env=None):
         cmd,
         cwd=cwd,
         env=env,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
+        stdout=sys.stdout,
+        stderr=sys.stderr,
         text=True
     )
-    stdout, stderr = process.communicate()
+    process.wait()
     if process.returncode != 0:
         print(f"Error executing command: {' '.join(cmd)}")
-        print("STDOUT:", stdout)
-        print("STDERR:", stderr)
-        raise subprocess.CalledProcessError(process.returncode, cmd, output=stdout, stderr=stderr)
-    return stdout
+        raise subprocess.CalledProcessError(process.returncode, cmd)
+    return "Output streamed directly to console"
 
 def create_venv(venv_path):
     """Creates a virtual environment using uv."""
